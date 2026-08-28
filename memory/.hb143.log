@@ -1,0 +1,28 @@
+RECORDED: 2026-08-28 12:55 UTC · 734c97b · CLEAN
+RESULT: 3091 passed, 9 skipped, 7 warnings in 452.29s (0:07:32)
+CENSUS: census pin GREEN — 6 baselined reads, 0 PENDING_CONVERSION (none); 8 removal(s) logged (see baseline REMOVAL_LOG)
+----------------------------------------------------------------------
+SKIP ROSTER (Ruling O) — 9 skip(s), current send 18:
+  • tests/test_external_smoke_2026_08_07.py:42  [age ? send(s)]
+      ruling: ingress smoke runs on the handback cadence (TEST_API_EXTERNAL=1)
+  • tests/test_external_smoke_2026_08_07.py:50  [age ? send(s)]
+      ruling: ingress smoke runs on the handback cadence (TEST_API_EXTERNAL=1)
+  • tests/test_external_smoke_2026_08_07.py:59  [age ? send(s)]
+      ruling: ingress smoke runs on the handback cadence (TEST_API_EXTERNAL=1)
+  • tests/test_external_smoke_2026_08_07.py:90  [age ? send(s)]
+      ruling: ingress smoke runs on the handback cadence (TEST_API_EXTERNAL=1)
+  • tests/test_rulings_2026_08_14_send13.py:72  [age 5 send(s)]  ⚠ OVERDUE (>3 sends)
+      ruling: NOT BUILT, recorded retroactively per Ruling F (send-15). Send-13 ordered the shared-source flag onto THREE surfaces (elevation sheet, read-back card, money-line note); only the READ-BACK CARD was built. The ELEVATION SHEET surface was ORDERED AND MISSED — a prose-said-done gap. WHAT WOULD UNHOLD IT: build the rail onto the elevation sheet with a render pin (see send-15 Ruling F).
+      BLOCKED ON / OWES UNBLOCK: build the rail onto the elevation sheet with a render pin (see send-15 Ruling F).
+  • tests/test_rulings_2026_08_14_send13.py:83  [age 5 send(s)]  ⚠ OVERDUE (>3 sends)
+      ruling: NOT BUILT, recorded retroactively per Ruling F (send-15). Send-13 ordered a money-line note for the shared-source flag; it was never built. SUPERSEDED by Ruling J (send-15): money reflects the quantity's status via the honest takeoff, not bespoke money-line note logic. WHAT WOULD UNHOLD IT: Howard reconciling F's money-line note with J's 'no special money-line logic'.
+      BLOCKED ON / OWES UNBLOCK: Howard reconciling F's money-line note with J's 'no special money-line logic'.
+  • tests/test_rulings_2026_08_14_send13.py:94  [age 5 send(s)]  ⚠ OVERDUE (>3 sends)
+      ruling: HELD RULING (send-13 §3 part 2, ON THE RECORD, NOT YET BUILT): a page mistyped schedule/cover that actually carries drawn geometry must be re-checked against its own feet-inch dimension-token count and treated as a drawing. WHAT WOULD UNHOLD IT: a REAL plan set with genuine schedule/cover pages to pick a non-invented threshold (Boni has none). The signal and a report already exist: ab._feet_inch_d
+      BLOCKED ON / OWES UNBLOCK: a REAL plan set with genuine schedule/cover pages to pick a non-invented threshold (Boni has none). The signal and a report already exist: ab._feet_inch_dim_tokens + scripts/drawn_geometry_token_report.py. Un-skip and pin the threshold when the real plan set arrives. This skip is the register refusing to let a held ruling vanish.
+  • tests/test_rulings_2026_08_14_send15.py:73  [age 3 send(s)]
+      ruling: RULING F (send-15) money-line + elevation-sheet surfaces. MONEY LINE is SUPERSEDED by Ruling J: money must reflect the quantity's status via the honest takeoff (Ruling H), NOT bespoke money-line note logic which J forbids ('do not build special money-line logic'). ELEVATION-SHEET rail render is a frontend surface whose 'what renders' pin needs frontend test infra not present in the pytest suite. W
+  • tests/test_rulings_2026_08_14_send16.py:87  [age 2 send(s)]
+      ruling: RULING F RETIRED as written (send-16 supersedes send-15 F). Money-line flagging / conflict-only-vs-all-shares is NOT built and will NOT be: status travels with the quantity (J) and the money surface renders what arrived — building money-line logic would violate the sealed principle ('no special money-line logic'). What survives is only a display/zoom rendering choice, made after the status plumbin
+----------------------------------------------------------------------
+INGRESS SMOKE: 4 passed in 2.01s

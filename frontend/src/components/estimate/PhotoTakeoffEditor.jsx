@@ -8,6 +8,9 @@ import ScalePanel from "@/components/estimate/phototakeoff/ScalePanel";
 // SEND-143 — PHASE 2 LINEAR RUNS: J-channel from the drawn opening box,
 // the gable rake from the lines drawn with the triangle, and a named
 // refusal row for every trim whose mark does not exist yet.
+// SEND-144 — the finished AI read hands off STARTING ZONES; the candidate
+// edges of a body zone show what a trim run would follow, with no LF.
+import CandidateEdges from "@/components/estimate/phototakeoff/CandidateEdges";
 import TrimPanel from "@/components/estimate/phototakeoff/TrimPanel";
 import {
   CATEGORIES, DORMER, GABLE, OPENING, SIDING, TAP_ORDER, kindLabel, markColor,
@@ -229,6 +232,20 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
       if (data.openings_without_a_box_note) toast.warning(data.openings_without_a_box_note);
       Object.values(data.kinds_absent || {}).forEach((n) => toast.info(n));
     } catch (e) { toast.error(e?.response?.data?.detail || "The read had nothing to propose here"); }
+    setBusy(false);
+  };
+  const pullZones = async () => {
+    setBusy(true);
+    try {
+      const { data } = await api.post(`/estimates/${est.id}/photo-takeoff/propose-zones`, null, { params: { photo_key: photoKey } });
+      await load();
+      if (data.refusal) toast.warning(data.refusal);
+      else toast.success(data.proposed
+        ? `${data.face?.toUpperCase()} — ${data.proposed} starting zone(s) placed, all PROVISIONAL: move them onto the wall you see, then confirm`
+        : `${data.face?.toUpperCase()} — this read's starting zones are already here; nothing was overwritten`);
+      (data.notes || []).forEach((n) => toast.info(n));
+      if (data.openings?.note) toast.warning(data.openings.note);
+    } catch (e) { toast.error(e?.response?.data?.detail || "There were no findings to hand off here"); }
     setBusy(false);
   };
   const apply = async () => {
@@ -456,6 +473,14 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
           >
             <Sparkles className="w-3 h-3" /> AI proposals
           </button>
+          <button
+            type="button" onClick={pullZones} disabled={busy || stage?.stage !== 2}
+            title={stage?.proposals_refusal || "Pull this face's starting zones from the finished read"}
+            className="inline-flex items-center gap-1 px-2 py-1 border text-[10px] font-bold uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed border-[var(--ai)] text-[var(--ai)]"
+            data-testid="photo-takeoff-zones-btn"
+          >
+            <Sparkles className="w-3 h-3" /> starting zones
+          </button>
         </div>
         {stage?.proposals_refusal && (
           <div className="px-3 py-1 bg-white border-b border-[var(--border)] text-[10px] text-[var(--warning-text)]" data-testid="photo-takeoff-proposals-refusal">
@@ -514,6 +539,7 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                         x2={(scale.anchor.p2.x / imgNat.w) * 100} y2={(scale.anchor.p2.y / imgNat.h) * 100}
                         stroke="#10B981" strokeWidth="0.5" />
                     )}
+                    <CandidateEdges marks={marks} nMark={nMark} />
                   </svg>
                   {/* vertex handles on the selected mark — drag tracks 1:1 at any zoom */}
                   {marks.filter((m) => m.id === selectedId).map((m) => nMark(m).map((p, i) => (

@@ -1,0 +1,399 @@
+"""AI PHOTO FINDINGS → STARTING ZONES ON THE PHOTO (Howard ruled 2026-08-28,
+pro-quote SEND-144).
+
+  8 photos + his annotations → the AI read that ALREADY FINISHED → starting
+  zones on those photos → he adjusts and adds what the AI missed →
+  CONFIRMED shapes only count.
+
+WHAT THIS MODULE IS:
+  · a READER of a finished run. There is NO second finder here: no OCR, no
+    photo pass, no height/gable/dormer engine. Every figure it places came
+    out of `ai_measure_runs.result` as it stands.
+  · a placer of PROVISIONAL shapes. A proposal is not a quantity. Nothing
+    here writes an estimate figure, a price or a material line.
+
+THE LAW IT HOLDS:
+  · A FACE THE RUN REFUSED GETS NO ZONE — the row says so in the run's own
+    words. A width the run marked `assumed_symmetric` is NOT a measured
+    width: it was mirrored off the opposite wall, and this send does not
+    place a rectangle on it.
+  · A CORNER SHOT IS NOT A FIFTH WALL. Zones land only on a photo the run
+    itself called a head-on elevation.
+  · THE RECTANGLE'S SHAPE comes from that face's own width × height. WHERE
+    IT SITS is a starting position and is NOT a measurement — the ft² comes
+    from the shape the contractor confirms after he moves it.
+  · A CONTESTED HEIGHT IS NOT AVERAGED. Both readings go in the basis and
+    the starting rectangle uses the LARGER so it can be pulled down.
+  · A GABLE ONLY WHERE THE RUN REPORTS A RISE, using that rise. Pitch never
+    creates a triangle here.
+  · A DORMER ONLY WHERE THE RUN REPORTS ONE, and when the run flagged the
+    width UNANCHORED the basis SAYS UNANCHORED, in the run's own words.
+  · A RE-PULL NEVER OVERWRITES A ZONE A HUMAN TOUCHED: proposals are keyed
+    (run_id, face:<label>:<part>) and an existing key is left alone.
+"""
+from __future__ import annotations
+
+import logging
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+from uuid import uuid4
+
+logger = logging.getLogger(__name__)
+
+HEAD_ON_FACES = ("front", "back", "left", "right")
+# The starting rectangle: 80% of the photo's width, centred, near the
+# bottom (Howard picked this). It is a PLACEMENT, never a measurement.
+BODY_WIDTH_FRAC = 0.80
+MAX_SET_HEIGHT_FRAC = 0.80
+BODY_BOTTOM_FRAC = 0.92
+ZONE_ORIGIN = "ai_zone_proposal"
+
+PLACEMENT_SENTENCE = (
+    "the rectangle's SHAPE comes from those figures; WHERE IT SITS on this "
+    "photo is a starting position and NOT a measurement — the ft² comes from "
+    "the shape you confirm after you move it")
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _run_photo_names(run: dict) -> List[str]:
+    return [n for n in str(run.get("photo_paths") or "").split(",") if n]
+
+
+def _raw(run: dict) -> dict:
+    return ((run.get("result") or {}).get("raw_ai") or {})
+
+
+def _measurements(run: dict) -> dict:
+    return ((run.get("result") or {}).get("measurements") or {})
+
+
+def _wall(run: dict, face: str) -> Optional[dict]:
+    for w in (_raw(run).get("walls") or []):
+        if isinstance(w, dict) and str(w.get("label") or "").lower() == face:
+            return w
+    return None
+
+
+def _refusal_for_face(run: dict, face: str) -> Optional[str]:
+    """The RUN'S OWN words when it refused this face. Nothing is rephrased
+    into something softer, and nothing is invented when it did not refuse."""
+    m = _measurements(run)
+    for r in (m.get("_faces_refused") or []):
+        if str(r.get("label") or "").lower() == face:
+            return str(r.get("refusal") or f"{face.upper()} — refused by the read")
+    measured = [str(x).lower() for x in (m.get("_faces_measured") or [])]
+    if measured and face not in measured:
+        return (f"{face.upper()} — this read did not measure this face, so "
+                "there is no width to shape a zone from. Not measured. Not "
+                "copied from another face")
+    w = _wall(run, face)
+    if not w:
+        return (f"{face.upper()} — this read carries no wall entry for this "
+                "face: no measured width, no zone")
+    if not float(w.get("width_ft") or 0) > 0:
+        return (f"{face.upper()} — no measured width on this face. Not "
+                "measured. Not copied from another face")
+    src = str(w.get("width_ft_source") or "")
+    if src and src != "direct_ref" and "direct" not in src:
+        return (f"{face.upper()} — no measured width on this face: the read's "
+                f"{w.get('width_ft')} ft is `{src}`, not a measurement. Not "
+                "copied from another face")
+    return None
+
+
+def face_for_photo(run: dict, photo_key: str) -> dict:
+    """Which face's zone set belongs on THIS photo — or the named reason no
+    zone does."""
+    names = _run_photo_names(run)
+    if photo_key not in names:
+        return {"face": None, "refusal": (
+            "this photo is not in that read — a read on another photo "
+            "unlocks nothing here")}
+    idx = names.index(photo_key)
+    entry = None
+    for p in (_raw(run).get("photos") or []):
+        if isinstance(p, dict) and p.get("index") == idx:
+            entry = p
+            break
+    elev = str((entry or {}).get("elevation") or "").strip().lower()
+    if not elev:
+        return {"face": None, "photo_index": idx, "refusal": (
+            "the read did not name an elevation for this photo, so no face "
+            "owns it — no zone is placed on a plane the read never called")}
+    if elev not in HEAD_ON_FACES:
+        return {"face": None, "photo_index": idx, "refusal": (
+            f"the read calls this photo a {elev.upper()} shot — a corner shot "
+            "is NOT a fifth wall: it shows two faces foreshortened and the "
+            "read measured neither plane here. Zones land on a face's own "
+            "head-on photo")}
+    refusal = _refusal_for_face(run, elev)
+    if refusal:
+        return {"face": elev, "photo_index": idx,
+                "refusal": refusal + " — no body zone, no gable zone, no "
+                                     "dormer zone"}
+    return {"face": elev, "photo_index": idx, "refusal": None,
+            "wall": _wall(run, elev)}
+
+
+def _height_for(wall: dict) -> tuple[float, Optional[str]]:
+    """A CONTESTED HEIGHT IS NOT AVERAGED (Howard, SEND-144). Both readings
+    are named and the starting rectangle takes the LARGER so it can be
+    pulled down."""
+    h = float(wall.get("height_ft") or 0)
+    readings = []
+    for r in (wall.get("_per_photo_readings") or []):
+        if isinstance(r, dict) and r.get("eave_ft"):
+            readings.append(round(float(r["eave_ft"]), 2))
+    src = str(wall.get("height_ft_source") or "")
+    if src == "direct_disagreement" and len(set(readings)) > 1:
+        pair = " vs ".join(f"{v} ft" for v in sorted(set(readings), reverse=True))
+        return max(readings), (
+            f"the read's height readings DISAGREE: {pair} — NOT averaged. The "
+            f"starting rectangle uses the larger ({max(readings)} ft) so you "
+            "can pull it down; it is not a measurement until you confirm the "
+            "shape")
+    return h, None
+
+
+def _dormer_for(run: dict, face: str) -> tuple[Optional[dict], Optional[str]]:
+    """The run's own dormer for this face, plus its UNANCHORED message when
+    the run flagged the width as having no reference marker in frame."""
+    d = None
+    for entry in (_raw(run).get("dormers") or []):
+        if isinstance(entry, dict) and str(entry.get("face") or "").lower() == face:
+            d = entry
+            break
+    if not d:
+        return None, None
+    unanchored = None
+    for hint in (_measurements(run).get("_ai_pin_gap_hints") or []):
+        if (str(hint.get("kind") or "") == "unanchored_dormer_width"
+                and str(hint.get("elevation") or "").lower() == face):
+            unanchored = str(hint.get("message") or "")
+            break
+    return d, unanchored
+
+
+def build_zone_marks(run: dict, face: str, wall: dict, photo_key: str,
+                     nat_w: float, nat_h: float, est_id: str,
+                     company_id: str, created_by: Optional[str]) -> List[dict]:
+    """The starting shapes for ONE face, in that photo's own pixels. Every
+    figure comes from `run`; the placement is stated as a placement."""
+    width_ft = float(wall.get("width_ft") or 0)
+    if not width_ft > 0 or not (nat_w > 0 and nat_h > 0):
+        return []
+    height_ft, disagreement = _height_for(wall)
+    if not height_ft > 0:
+        return []
+    rise_ft = float(wall.get("gable_triangle_height_ft") or 0)
+    dormer, unanchored = _dormer_for(run, face)
+    dormer_w = float((dormer or {}).get("width_ft") or 0)
+    dormer_h = float((dormer or {}).get("knee_wall_height_ft") or 0)
+    has_dormer = bool(dormer and dormer_w > 0 and dormer_h > 0
+                      and float(wall.get("dormer_face_sqft") or 0) > 0)
+    # ONE scale for the whole face set, so the body, its gable and its
+    # dormer stay in proportion to each other and all fit the frame.
+    above_ft = max(rise_ft, dormer_h if has_dormer else 0.0)
+    ppf = min(BODY_WIDTH_FRAC * nat_w / width_ft,
+              MAX_SET_HEIGHT_FRAC * nat_h / (height_ft + above_ft))
+    body_w = width_ft * ppf
+    body_h = height_ft * ppf
+    x0 = (nat_w - body_w) / 2.0
+    y1 = BODY_BOTTOM_FRAC * nat_h
+    y0 = y1 - body_h
+    src_note = (f"width {wall.get('width_ft_source')}, height "
+                f"{wall.get('height_ft_source')}, confidence "
+                f"{wall.get('confidence')}")
+
+    def base(part: str, kind: str, shape: str, pts: List[dict], label: str,
+             basis: str, extra: Optional[dict] = None) -> dict:
+        m = {
+            "id": str(uuid4()), "estimate_id": est_id,
+            "company_id": company_id, "photo_key": photo_key,
+            "kind": kind, "shape": shape, "points": pts,
+            "category": None, "label": label,
+            "source": ZONE_ORIGIN, "style": None,
+            "width_in": None, "height_in": None,
+            "product": None, "product_history": [],
+            "confirmed_under_product": None,
+            "symmetric": None, "pitch_set": None, "depth_ft": None,
+            "origin": ZONE_ORIGIN, "stage": 2, "basis": basis,
+            "ai": {"run_id": run.get("run_id"),
+                   "ref_id": f"face:{face}:{part}",
+                   "face": face,
+                   "claimed_width_ft": width_ft,
+                   "claimed_height_ft": height_ft,
+                   "width_source": wall.get("width_ft_source"),
+                   "height_source": wall.get("height_ft_source"),
+                   "confidence": wall.get("confidence"),
+                   "placement": "starting position, not a measurement"},
+            "status": "provisional", "confirmed_at": None,
+            "confirmed_by": None, "confirmed_stage": None,
+            "confirmed_basis": None, "confirmed_after_ai_read": None,
+            "refused_reason": None, "created_at": _now(),
+            "created_by": created_by, "updated_at": _now()}
+        if extra:
+            m["ai"].update(extra)
+        return m
+
+    out: List[dict] = []
+    body_basis = (f"AI STARTING ZONE — the read measured this {face.upper()} "
+                  f"face at {width_ft} ft × {height_ft} ft ({src_note}). "
+                  + PLACEMENT_SENTENCE
+                  + (f". {disagreement}" if disagreement else ""))
+    out.append(base("body", "siding_zone", "rect",
+                    [{"x": x0, "y": y0}, {"x": x0 + body_w, "y": y0},
+                     {"x": x0 + body_w, "y": y1}, {"x": x0, "y": y1}],
+                    f"AI {face} body", body_basis,
+                    {"height_readings_disagree": bool(disagreement)}))
+    if rise_ft > 0:
+        rise_px = rise_ft * ppf
+        out.append(base(
+            "gable", "gable", "poly",
+            [{"x": x0, "y": y0},
+             {"x": x0 + body_w / 2.0, "y": y0 - rise_px},
+             {"x": x0 + body_w, "y": y0}],
+            f"AI {face} gable",
+            (f"AI STARTING SHAPE — the read reports a gable RISE of "
+             f"{rise_ft} ft on this face; that figure is its own, NOT derived "
+             f"from a pitch. The triangle is a starting shape: ½ × width × "
+             f"rise comes from the triangle you confirm, in this photo's own "
+             f"scale"),
+            {"claimed_gable_rise_ft": rise_ft}))
+    if has_dormer:
+        d_w = dormer_w * ppf
+        d_h = dormer_h * ppf
+        try:
+            off = float(dormer.get("offset_x_ft") or 0) * ppf
+        except (TypeError, ValueError):
+            off = 0.0
+        cx = x0 + body_w / 2.0 + off
+        out.append(base(
+            "dormer", "dormer", "poly",
+            [{"x": cx - d_w / 2.0, "y": y0},
+             {"x": cx + d_w / 2.0, "y": y0},
+             {"x": cx + d_w / 2.0, "y": y0 - d_h},
+             {"x": cx - d_w / 2.0, "y": y0 - d_h}],
+            f"AI {face} dormer",
+            (f"AI STARTING SHAPE — the read reports a dormer "
+             f"{dormer_w} ft wide × {dormer_h} ft knee wall on this face "
+             f"({dormer.get('width_source')}). "
+             + (f"UNANCHORED: {unanchored}" if unanchored else
+                "the read anchored this width to a reference in frame")
+             + ". The depth is NOT typed, so the cheeks refuse until you "
+               "type it"),
+            {"claimed_dormer_width_ft": dormer_w,
+             "claimed_dormer_knee_ft": dormer_h,
+             "unanchored": bool(unanchored),
+             "unanchored_message": unanchored}))
+    return out
+
+
+async def existing_refs(db, est_id: str, company_id: str, photo_key: str,
+                        run_id: str) -> set:
+    have = set()
+    async for m in db.photo_takeoff_marks.find(
+            {"estimate_id": est_id, "company_id": company_id,
+             "photo_key": photo_key}):
+        ai = m.get("ai") or {}
+        if ai.get("run_id") and ai.get("ref_id"):
+            have.add((ai["run_id"], ai["ref_id"]))
+    return have
+
+
+async def propose_zones_for_photo(db, run: dict, est_id: str, company_id: str,
+                                  photo_key: str, created_by: Optional[str],
+                                  natural_size) -> dict:
+    """Place (or decline to place) one face's zone set on one photo.
+    Returns the report row — the refusal is as much of an answer as the
+    zones are."""
+    who = face_for_photo(run, photo_key)
+    if who.get("refusal"):
+        return {"photo_key": photo_key, "face": who.get("face"),
+                "proposed": 0, "marks": [], "refusal": who["refusal"]}
+    face, wall = who["face"], who["wall"]
+    dims = await natural_size(photo_key)
+    if not dims:
+        return {"photo_key": photo_key, "face": face, "proposed": 0,
+                "marks": [], "refusal": (
+                    "this photo's file cannot be found, so a zone cannot be "
+                    "placed in its own pixels — nothing is placed on a "
+                    "guessed size")}
+    nat_w, nat_h = dims
+    have = await existing_refs(db, est_id, company_id, photo_key,
+                               run.get("run_id"))
+    made = [m for m in build_zone_marks(run, face, wall, photo_key, nat_w,
+                                        nat_h, est_id, company_id, created_by)
+            if (m["ai"]["run_id"], m["ai"]["ref_id"]) not in have]
+    if made:
+        await db.photo_takeoff_marks.insert_many([dict(m) for m in made])
+    notes = []
+    for row in (_measurements(run).get("_per_elevation_breakdown") or []):
+        if str(row.get("label") or "").lower() == face:
+            stone = float(row.get("stone_sqft") or 0)
+            if stone > 0:
+                notes.append(
+                    f"the read reports {stone} ft² of {row.get('stone_callout') or 'stone/brick'} "
+                    "no-siding on this face and carries NO geometry for it — "
+                    "masks are an INPUT to the read, never an output. Draw "
+                    "the non-siding zone yourself; nothing is placed at a "
+                    "guessed spot")
+    return {"photo_key": photo_key, "face": face, "proposed": len(made),
+            "marks": made, "refusal": None,
+            "already_there": len(have) or None, "notes": notes or None}
+
+
+async def maybe_propose_zones(run_id: str) -> dict:
+    """AUTO-PROPOSE ON COMPLETION (Howard ruled 2026-08-28): the moment a run
+    finishes, every face that has a MEASURED WIDTH gets its starting zone
+    set on its own head-on photo. A protected estimate is skipped — a
+    proposal is still a write, and 423 governs. Never raises into the
+    worker."""
+    out = {"run_id": run_id, "faces": [], "skipped": None}
+    try:
+        from db import db
+        from untouchable import is_untouchable
+        run = await db.ai_measure_runs.find_one({"run_id": run_id})
+        if not run or run.get("status") != "done":
+            out["skipped"] = "run is not done"
+            return out
+        est_id = run.get("estimate_id")
+        if not est_id:
+            out["skipped"] = "this run carries no estimate"
+            return out
+        if await is_untouchable(est_id):
+            out["skipped"] = ("protected estimate — no derived write, not "
+                              "even a proposal")
+            return out
+        est = await db.estimates.find_one({"id": est_id},
+                                          {"_id": 0, "company_id": 1})
+        if not est:
+            out["skipped"] = "estimate not found"
+            return out
+        user = await db.users.find_one({"id": run.get("user_id")},
+                                       {"_id": 0, "email": 1}) or {}
+        from routes.photo_takeoff import _photo_natural_size
+
+        async def natural_size(key):
+            dims = _photo_natural_size(key)
+            if dims:
+                return dims
+            from config import UPLOAD_DIR
+            from upload_store import rehydrate_to_disk
+            if await rehydrate_to_disk(key, UPLOAD_DIR):
+                return _photo_natural_size(key)
+            return None
+
+        for photo_key in _run_photo_names(run):
+            row = await propose_zones_for_photo(
+                db, run, est_id, est["company_id"], photo_key,
+                user.get("email"), natural_size)
+            row.pop("marks", None)
+            out["faces"].append(row)
+    except Exception as exc:                      # never break the worker
+        logger.warning("zone auto-proposal failed for run %s: %s", run_id, exc)
+        out["skipped"] = f"auto-proposal failed: {exc}"
+    return out

@@ -117,6 +117,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // doors; the annotator is an import source and the Guided Capture
   // step, never a drawing UI here.
   const [takeoffOpenFor, setTakeoffOpenFor] = useState(null);
+  // SEND-144 (Howard ruled 2026-08-28) — THE PHOTOS AS READ. An
+  // annotated photo is a DIFFERENT FILE from the one attached to the
+  // estimate, and the read's findings — and now its starting zones —
+  // live on the file the read actually read. These are those files, so
+  // the zones are always reachable without restoring anything.
+  const [readPhotos, setReadPhotos] = useState([]);
   // Amber nudge — annotations edited after the last run only fold into
   // the measurements on Re-run. Cleared on run success / Start Over.
   const [annotDirtySinceRun, setAnnotDirtySinceRun] = useState(false);
@@ -673,6 +679,9 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         // errored runs stay fresh (< 30 min) so old failures don't nag.
         if (r.status === "done" || r.status === "running" || (r.age_seconds || 0) < 30 * 60) {
           setLastRun(r);
+          if (r.status === "done" && r.photo_paths) {
+            setReadPhotos(String(r.photo_paths).split(",").map((x) => x.trim()).filter(Boolean));
+          }
         } else {
           setLastRun(null);
         }
@@ -834,6 +843,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     if (lastRun.photo_paths) {
       const paths = String(lastRun.photo_paths).split(",").map((s) => s.trim()).filter(Boolean);
       if (paths.length) setPhotoUrls(paths);
+      if (paths.length) setReadPhotos(paths);
     }
     setLastRun(null);
     try {
@@ -871,6 +881,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     if (lastRun.photo_paths) {
       const paths = String(lastRun.photo_paths).split(",").map((s) => s.trim()).filter(Boolean);
       if (paths.length) setPhotoUrls(paths);
+      if (paths.length) setReadPhotos(paths);
     }
     setCurrentRunId(lastRun.run_id);
     _applyAIResult(lastRun.result, lastRun);
@@ -3829,6 +3840,38 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
 
                   {previewTab === "preview" && (
                   <>
+                  {/* SEND-144 (Howard ruled 2026-08-28) — THE PHOTOS AS READ.
+                      An annotated photo is a DIFFERENT FILE from the one on
+                      the estimate: the read looked at the annotated copy, and
+                      the starting zones sit on THAT file. These buttons open
+                      the takeoff on the photo the read actually read, so the
+                      zones are never out of reach. The elevation beside each
+                      one is the READ'S OWN call, not ours. */}
+                  {readPhotos.length > 0 && (
+                    <div className="mb-3 border border-[var(--ai)] bg-[#EFF6FF] p-2" data-testid="ai-measure-read-photos">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--ai)] mb-1">
+                        The photos this read read — starting zones live here
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
+                        {readPhotos.map((name, i) => {
+                          const elev = (preview?.raw_ai?.photos || []).find((x) => x?.index === i)?.elevation;
+                          return (
+                            <button key={name} type="button" onClick={() => setTakeoffOpenFor(name)}
+                              className="flex items-center gap-1 px-2 py-1 bg-white border border-[var(--ai)] text-[10px] font-bold uppercase tracking-wider text-[var(--ai)] hover:opacity-90"
+                              data-testid={`ai-measure-read-photo-takeoff-${i}`}
+                              title="Open the photo takeoff on the photo this read read — its starting zones are on this file">
+                              <Ruler className="w-2.5 h-2.5" />
+                              <span className="truncate">{elev ? String(elev).toUpperCase() : `photo ${i + 1}`}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-1 text-[9px] text-[var(--ink-2)] leading-snug">
+                        Every zone is PROVISIONAL and its shape is a STARTING SHAPE — move it onto the wall you see, add
+                        what the read missed, then confirm. A refused face has no zone and says why.
+                      </div>
+                    </div>
+                  )}
                   {/* Iter 78z (P1.3 + Cross-Check) — Per-Elevation Breakdown,
                       "+ Add Accent", and "🔁 Re-check with AI" button */}
                   <PerElevationBreakdownCard

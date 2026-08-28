@@ -2597,6 +2597,24 @@ async def ai_measure(
             # Persist to /api/uploads/ so it's addressable + recoverable.
             ext = "jpg" if ctype == "image/jpeg" else ctype.split("/")[-1]
             name = f"ai_{_uuid.uuid4().hex}.{ext}"
+            # SEND-144: THIS IS THE PHOTO THE READ ACTUALLY READS, and since
+            # SEND-144 it is also the photo that carries the starting zones —
+            # so it goes to OBJECT STORAGE, not just this pod's disk, which a
+            # pod replacement wipes. The disk copy stays as a working cache
+            # for the readers that open a file by path. A failed store
+            # REFUSES the run rather than reading a photo it cannot keep.
+            from object_storage import aput, upload_path
+            from upload_store import save_blob
+            try:
+                await aput(upload_path(name), raw, ctype)
+            except Exception as exc:
+                raise HTTPException(
+                    status_code=502,
+                    detail=("The annotated photo could not be stored — the "
+                            "read was NOT started. Try again; nothing was "
+                            "recorded on this estimate."),
+                ) from exc
+            await save_blob(name, raw, ctype)
             (UPLOAD_DIR / name).write_bytes(raw)
             all_photo_names.append(name)
 
@@ -3072,6 +3090,13 @@ async def _execute_reconcile_only_worker(
         # AUTO-ARCHIVE ON PROTECTED ESTIMATES (ruled 2026-08-11)
         from run_archive import maybe_archive_protected
         await maybe_archive_protected(run_id)
+        # SEND-144 — THE HANDOFF: the moment the read is done, every face
+        # with a MEASURED WIDTH gets its STARTING ZONE SET on its own
+        # head-on photo. Proposals only; a refused face gets none, a
+        # protected estimate gets none, and a zone a human touched is
+        # never overwritten. This never raises into the worker.
+        from photo_zone_proposals import maybe_propose_zones
+        await maybe_propose_zones(run_id)
         # Iter 79j.52 — Repoint the estimate's ai_measure_sessions doc
         # so the UI's Resume path surfaces the reconciled result. The
         # session preview is a client-persisted mirror of the last
@@ -7005,6 +7030,13 @@ async def _execute_ai_measure_worker(
         # AUTO-ARCHIVE ON PROTECTED ESTIMATES (ruled 2026-08-11)
         from run_archive import maybe_archive_protected
         await maybe_archive_protected(run_id)
+        # SEND-144 — THE HANDOFF: the moment the read is done, every face
+        # with a MEASURED WIDTH gets its STARTING ZONE SET on its own
+        # head-on photo. Proposals only; a refused face gets none, a
+        # protected estimate gets none, and a zone a human touched is
+        # never overwritten. This never raises into the worker.
+        from photo_zone_proposals import maybe_propose_zones
+        await maybe_propose_zones(run_id)
     except Exception as e:
         # Log & surface a friendly error to the polling client.
         logger.exception("[ai-measure] worker failed for run_id=%s", run_id)

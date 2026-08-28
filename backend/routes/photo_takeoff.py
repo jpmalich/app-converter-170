@@ -41,6 +41,7 @@ from pydantic import BaseModel, Field
 
 from db import db
 from deps import get_current_user
+from photo_zone_proposals import propose_zones_for_photo
 from untouchable import is_untouchable
 
 router = APIRouter(tags=["photo-takeoff"])
@@ -77,7 +78,7 @@ STATUSES = {"provisional", "confirmed", "refused"}
 #   ai_proposal           minted from a completed read on THIS photo
 #   contractor_stage2     drawn by hand after the read (what the AI missed)
 ORIGINS = {"contractor_stage1", "imported_annotation", "ai_proposal",
-           "contractor_stage2"}
+           "contractor_stage2", "ai_zone_proposal"}
 GUIDANCE_ORIGINS = {"contractor_stage1", "imported_annotation"}
 # The body-siding sections a zone's product may come from. Accessories,
 # soffit and trim are NOT body products and are never offered.
@@ -464,6 +465,12 @@ def _photo_natural_size(photo_key: str) -> Optional[tuple[float, float]]:
 
 
 def _origin_basis(origin: str, stage: int) -> str:
+    if origin == "ai_zone_proposal":
+        # SEND-144 — a STARTING ZONE read off a finished run. Its own basis
+        # names the face's figures; this is the provenance line.
+        return ("AI STARTING ZONE — shaped from the completed read's own "
+                "figures for this face; provisional until the contractor "
+                "moves it and rules on it")
     if origin == "ai_proposal":
         return ("AI PROPOSAL — minted from the completed read on this photo; "
                 "provisional until the contractor rules on it")
@@ -1624,6 +1631,73 @@ async def propose_from_read(est_id: str, photo_key: str,
                  "confirm here is EVIDENCE and writes quantity only"),
     }
 
+
+
+@router.post("/estimates/{est_id}/photo-takeoff/propose-zones")
+async def propose_zones(est_id: str, photo_key: str,
+                        user: dict = Depends(get_current_user)):
+    """SEND-144 — THE HANDOFF: the finished read's own findings become
+    STARTING ZONES on the photo that belongs to that face. It does not
+    rebuild measure: no second finder, no re-OCR, no height/gable/dormer
+    engine. Body from that face's own width × height, a gable ONLY where
+    the read reports a rise, a dormer ONLY where the read reports one
+    (basis SAYS UNANCHORED when the read flagged it), and the openings
+    through THE EXISTING PROPOSER — one proposer, not two.
+
+    A refused face gets NO zone and answers in the read's own words. A
+    corner shot gets none either: it is not a fifth wall."""
+    est = await _est_or_404(est_id, user)
+    if await is_untouchable(est_id):
+        raise HTTPException(
+            status_code=423,
+            detail="protected estimate — a zone proposal is still a write")
+    run = await _photo_read(est_id, photo_key)
+    if not run:
+        raise HTTPException(
+            status_code=400,
+            detail=("no completed AI read carries this photo — there are no "
+                    "findings to hand off here"))
+
+    async def natural_size(key):
+        dims = _photo_natural_size(key)
+        if dims:
+            return dims
+        from config import UPLOAD_DIR
+        from upload_store import rehydrate_to_disk
+        if await rehydrate_to_disk(key, UPLOAD_DIR):
+            return _photo_natural_size(key)
+        return None
+
+    row = await propose_zones_for_photo(
+        db, run, est_id, user["company_id"], photo_key,
+        user.get("email"), natural_size)
+    # THE OPENINGS COME THROUGH THE EXISTING PROPOSER — there is one
+    # opening proposer in this app and this is a call to it, not a copy.
+    openings = None
+    if not row["refusal"]:
+        try:
+            openings = await propose_from_read(est_id, photo_key, user)
+        except HTTPException as exc:
+            openings = {"ok": False, "proposed": 0, "detail": exc.detail}
+    _ = est
+    return {
+        "ok": True, "run_id": run.get("run_id"),
+        "face": row.get("face"), "photo_key": photo_key,
+        "zones_proposed": [m["ai"]["ref_id"].split(":")[-1]
+                           for m in row.get("marks") or []] or [],
+        "proposed": row.get("proposed", 0),
+        "marks": [_mark_public(m) for m in row.get("marks") or []],
+        "refusal": row.get("refusal"),
+        "notes": row.get("notes"),
+        "openings": ({"proposed": openings.get("proposed"),
+                      "without_a_box": openings.get("openings_without_a_box"),
+                      "note": openings.get("openings_without_a_box_note")}
+                     if openings else None),
+        "note": ("every zone is PROVISIONAL and its shape is a STARTING "
+                 "SHAPE: move it onto the wall you see, add what the read "
+                 "missed, then confirm. A confirm is EVIDENCE and writes "
+                 "quantity only — no price, no material line"),
+    }
 
 
 @router.post("/estimates/{est_id}/photo-takeoff/apply")
