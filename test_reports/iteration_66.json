@@ -1,0 +1,59 @@
+{
+  "summary": "SEND-145 (defect fix on top of SEND-144) VISUALLY VERIFIED on EST-176308 (338c6ac8-4e77-4dcd-84df-1cb7327b7ecb). All 7 acceptance points PASS. Logged in as hhunt6677@yahoo.com (owner) → opened estimate → AI MEASURE modal → dismissed onboarding checklist → RESTORE PREVIEW rendered the PREVIEW tab with the ai-measure-read-photos strip and all 8 buttons (FRONT/FRONT-LEFT/LEFT/REAR-LEFT/BACK/REAR-RIGHT/RIGHT/FRONT-RIGHT). Each of the four measured faces (FRONT, LEFT, BACK) opens its OWN ai_*.jpg file and shows the SEND-145 body/gable/dormer zones anchored to first-floor openings, while RIGHT still refuses in the run's own words. See file-level details below; screenshots at /app/.screenshots/send145_*.jpg.",
+
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+
+  "verification_evidence": {
+    "test_1_strip_and_8_buttons": "PASS — ai-measure-read-photos strip present in preview tab. 8 buttons ai-measure-read-photo-takeoff-0..7 labelled FRONT, FRONT-LEFT, LEFT, REAR-LEFT, BACK, REAR-RIGHT, RIGHT, FRONT-RIGHT (same as iteration_65).",
+
+    "test_2_FRONT_visual_anchor": "PASS — button 0 opened ai_f3c3b84ff88d467d91a8930064d0f737.jpg (FRONT ELEVATION). Yellow-dashed 'AI front body' rectangle's BOTTOM edge (labelled 'starter candidate') sits at the base of the wall where the two garage doors and the entry door meet the driveway — NOT down on the driveway/patio in front of the house. The two garage doors and the entry door are entirely enclosed inside the body rectangle. The green-outlined gable triangle ('GABLE 26.3' × 6.5' = 85 ft² (5.9/12)') sits directly ON TOP of the body rectangle (upper wall / roof region), not floating in the sky and not overlapping the first floor. Bottom is resting on the WALL LINE (garage-door sill / driveway meeting line), consistent with the note that bottom_from='front-gd1' (garage door) at ppf 61.82. Screenshot: /app/.screenshots/send145_front.jpg.",
+
+    "test_3_FRONT_basis_text_contains_anchor_sentences": "PASS — every SEND-145 anchor phrase is present in the FRONT body basis text: 'BOTTOM anchored to the sill line of', 'the lowest first-floor opening', 'boxed on this photo', 'pull it down to the start line', 'SCALE from', '<n> ft wide,', '<n> px on this photo', 'no scale is averaged', 'no course height is guessed'. All SEND-144 sentences survive: '27.0 ft × 10.9 ft', 'starting position', 'NOT a measurement', '10.9 ft vs 9.0 ft', 'NOT averaged'.",
+
+    "test_4_LEFT_visual_body_and_dormer": "PASS — button 2 opened ai_3112d120856e4ad7aac69a818bca9052.jpg (LEFT ELEVATION). The yellow-dashed 'AI left body' rectangle (SIDING-464.87 ft²-provisional; the '37.0 ft × 8.4 ft' figure is in the basis text) spans the first-floor red siding — bottom (starter candidate) rests along the wall/mulch base line, not down on the grass at the bottom of the photo. Three DH first-floor windows are enclosed by the body. The cyan-dashed 'AI left dormer' rectangle (DORMER-75.76 ft²-provisional) sits ABOVE the body top, over the pop-up dormer with its two 2SL windows — NOT on the first floor and NOT at the photo bottom. Left dormer basis carries 'ABOVE THE BODY TOP', 'never at the photo bottom' AND 'UNANCHORED' (dormer wall/width unanchored sentence from SEND-144 survives). Screenshot: /app/.screenshots/send145_left_v2.jpg.",
+
+    "test_5_BACK_visual_body_over_patio": "PASS — button 4 opened ai_5a9d8c20ea194fe8ac97abadaa5555b3.jpg (BACK ELEVATION). Yellow-dashed 'AI back body' rectangle: the '27.0 ft × 9.7 ft' figure is in the basis text; the BOTTOM edge (starter candidate) rests at the wall base / patio-door threshold line (bottom_from='back-d1-patio' per the run). Even though a wide gravel patio with fire pit + chairs extends below, the body-rectangle bottom clearly stops AT the wall — the patio slab is below the rectangle, NOT inside it. The gable (GABLE-no scale-provisional) sits above the body top. All SEND-145 anchor substrings ('BOTTOM anchored to the sill line of', 'the lowest first-floor opening', 'SCALE from', 'no scale is averaged', 'no course height is guessed') are present in the basis text on this photo. Screenshot: /app/.screenshots/send145_back.jpg.",
+
+    "test_6_RIGHT_refuses_and_no_marks_placed": "PASS — button 6 opened ai_808ef6abd6a04ef3baa8d373ab340a31.jpg (RIGHT ELEVATION). Pressing STARTING ZONES button placed NO body zone, NO gable zone, NO dormer zone (0 mark rows before, 0 after). Toast displayed verbatim: 'No photo, no wall. RIGHT — no photo measured this wall's width (assumed_symmetric). Not measured. Not copied from another face. Nothing is priced from a refused face — no ft², no gable, no starter, no corner, no J-channel, no line. House-level runs (eaves, rakes, corners, footprint) are REFUSED as well: the read computed them over the faces it mirrored, and they cannot be pulled apart afterwards. They are refusals, not zeros.' Contains BOTH required tokens: 'assumed_symmetric' AND 'Not measured. Not copied from another face'. Screenshot: /app/.screenshots/send145_right.jpg + send145_right_toast.jpg.",
+
+    "test_7_FRONT_idempotent_starting_zones": "PASS — on FRONT, pressed STARTING ZONES once with 6 mark rows already present. After press: still 6 mark rows (no duplicates). Toast: 'FRONT — this read's starting zones are already here; nothing was overwritten'. Idempotent. Screenshot: /app/.screenshots/send145_front_toast.jpg."
+  },
+
+  "raw_captured_values": {
+    "front_photo_img": "/api/uploads/ai_f3c3b84ff88d467d91a8930064d0f737.jpg",
+    "left_photo_img": "/api/uploads/ai_3112d120856e4ad7aac69a818bca9052.jpg",
+    "back_photo_img": "/api/uploads/ai_5a9d8c20ea194fe8ac97abadaa5555b3.jpg",
+    "right_photo_img": "/api/uploads/ai_808ef6abd6a04ef3baa8d373ab340a31.jpg",
+    "front_idempotency_marks_before_after": "6 -> 6",
+    "front_idempotency_toast": "FRONT — this read's starting zones are already here; nothing was overwritten",
+    "right_refusal_toast_verbatim": "No photo, no wall. RIGHT — no photo measured this wall's width (assumed_symmetric). Not measured. Not copied from another face. Nothing is priced from a refused face — no ft², no gable, no starter, no corner, no J-channel, no line. House-level runs (eaves, rakes, corners, footprint) are REFUSED as well: the read computed them over the faces it mirrored, and they cannot be pulled apart afterwards. They are refusals, not zeros.",
+    "left_dormer_flags": {"ABOVE_THE_BODY_TOP": true, "never_at_the_photo_bottom": true, "UNANCHORED": true},
+    "left_body_flags": {"37.0 ft × 8.4 ft in text": true, "BOTTOM anchored to the sill line of": true, "SCALE from": true},
+    "back_body_flags": {"27.0 ft × 9.7 ft in text": true, "BOTTOM anchored to the sill line of": true, "no scale is averaged": true, "no course height is guessed": true},
+    "front_body_flags": {"27.0 ft × 10.9 ft": true, "10.9 ft vs 9.0 ft": true, "NOT averaged": true, "starting position": true, "NOT a measurement": true, "BOTTOM anchored to the sill line of": true, "the lowest first-floor opening": true, "boxed on this photo": true, "pull it down to the start line": true, "SCALE from": true, "no scale is averaged": true, "no course height is guessed": true}
+  },
+
+  "test_report_links": [
+    "/app/.screenshots/send145_front.jpg",
+    "/app/.screenshots/send145_left_v2.jpg",
+    "/app/.screenshots/send145_back.jpg",
+    "/app/.screenshots/send145_right.jpg",
+    "/app/.screenshots/send145_front_toast.jpg",
+    "/app/.screenshots/send145_right_toast.jpg"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "SEND-145 re-anchor works end-to-end: on every measured face (FRONT/LEFT/BACK) the body rectangle's bottom rests on the wall base (garage door sill, first-floor window sill, patio-door threshold respectively) — NOT on grass, driveway, or patio slab; the gable sits directly on the body top; the LEFT dormer stacks ABOVE the body top. The 'ABOVE THE BODY TOP' / 'never at the photo bottom' sentences from photo_zone_proposals.build_zone_marks() reach the UI verbatim.",
+    "The anchor sentences from first_floor_anchor() ('BOTTOM anchored to the sill line of', 'the lowest first-floor opening', 'boxed on this photo', 'SCALE from', 'no scale is averaged', 'no course height is guessed') all render in the SIDING row basis text — no truncation.",
+    "Idempotent re-pull confirmed: FRONT mark count unchanged after a repeat STARTING ZONES press and the toast reports 'nothing was overwritten'. RIGHT still refuses with 'assumed_symmetric' + 'Not measured. Not copied from another face' verbatim; 0 marks placed.",
+    "SEND-144 survivor tokens ('27.0 ft × 10.9 ft', '10.9 ft vs 9.0 ft', 'NOT averaged', 'starting position', 'NOT a measurement') are all still present — SEND-145 did not regress the earlier basis prose."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only, per instructions)", "frontend": "7/7 acceptance points PASS (100%)"},
+  "test_credentials": "hhunt6677@yahoo.com / backend/.env ADMIN_PASSWORD",
+  "seed_data_creation": "None — READ-ONLY verification. STARTING ZONES pressed on FRONT (idempotent no-op, 6→6) and on RIGHT (refused, 0→0). No zones were deleted, confirmed, refused, adjusted, applied, or re-scaled. EST-886440 not touched.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "SEND-145 defect fix is fully verified. Reproduce with: (1) login owner, (2) /estimate/338c6ac8-4e77-4dcd-84df-1cb7327b7ecb, (3) ai-measure-btn → dismiss 'PHOTO CHECKLIST' onboarding-backdrop (button 'GOT IT') → ai-measure-restore-run-btn, (4) click each ai-measure-read-photo-takeoff-{0,2,4,6}. Editor close button is data-testid='photo-takeoff-close' (NOT '...-close-btn'). Toast text is captured by DOM walk (many <div> layers) — anchor by substring ('assumed_symmetric', 'already here', 'nothing was overwritten'). RIGHT refusal on this estimate uses the FULL 'No photo, no wall. RIGHT — ...' string, not the shorter version documented in iteration_65 — both contain the same required substrings. Do NOT press Apply Measurements, do NOT delete zones, do NOT touch EST-886440."
+}

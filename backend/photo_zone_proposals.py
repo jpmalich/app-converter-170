@@ -41,12 +41,36 @@ from uuid import uuid4
 logger = logging.getLogger(__name__)
 
 HEAD_ON_FACES = ("front", "back", "left", "right")
-# The starting rectangle: 80% of the photo's width, centred, near the
-# bottom (Howard picked this). It is a PLACEMENT, never a measurement.
+# SEND-145 (Howard ruled 2026-08-28, after the field run on EST-176308):
+# "80% of photo width, near the BOTTOM OF THE PHOTO" was a PHOTO rule, not a
+# wall rule — a yard or a patio put the box on the grass and parked the
+# dormer on the first floor. THE SHAPE WAS FINE; THE ANCHOR WAS WRONG.
+#
+# The anchor order, as ruled. Only (3) exists today; (1) and (2) are kept as
+# the doors they will be the day those marks exist, and (4) SAYS SO OUT LOUD:
+#   1. the starter-candidate / wall-base MARK on that photo   — no such mark
+#      type exists yet (SEND-143 left it a named refusal), and the SEND-144
+#      candidate edge is derived FROM the body zone, so anchoring to it would
+#      be circular.
+#   2. the WALL REF bar                                       — the read
+#      names it in prose only; it writes no pixel geometry for it.
+#   3. THE READ'S OWN FIRST-FLOOR OPENING BOXES — real pixels on the wall,
+#      each with its own measured width. The LOWEST sets the bottom, the
+#      BIGGEST sets the plane scale. A gable-peak window and a dormer
+#      opening set NEITHER.
+#   4. else the photo bottom at 80% width, and the basis says it is a PHOTO
+#      EDGE, NOT A WALL LINE — indeterminate, never a silent fallback that
+#      looks measured.
 BODY_WIDTH_FRAC = 0.80
 MAX_SET_HEIGHT_FRAC = 0.80
 BODY_BOTTOM_FRAC = 0.92
 ZONE_ORIGIN = "ai_zone_proposal"
+
+PHOTO_BOTTOM_SENTENCE = (
+    "no first-floor opening on this photo carries a typed size, so there is "
+    "NO SCALE FROM OPENINGS here and none is guessed: the box is 80% of the "
+    "photo's width sitting at the PHOTO BOTTOM, which is a photo edge and "
+    "NOT a wall line — INDETERMINATE, move it onto the wall you see")
 
 PLACEMENT_SENTENCE = (
     "the rectangle's SHAPE comes from those figures; WHERE IT SITS on this "
@@ -177,6 +201,79 @@ def _dormer_for(run: dict, face: str) -> tuple[Optional[dict], Optional[str]]:
     return d, unanchored
 
 
+def _base_mark_line(marks_on_photo) -> None:
+    """ANCHOR 1 — the starter-candidate / wall-base MARK. There is no such
+    mark type yet (SEND-143 left starter a named refusal), and the SEND-144
+    candidate edge is derived FROM the body zone, so reading it back would be
+    circular. The door stays here for the mark-type send; today it answers
+    honestly with nothing."""
+    return None
+
+
+def _wall_ref_bar(run: dict, photo_idx: int) -> None:
+    """ANCHOR 2 — the WALL REF bar. The read NAMES it in prose
+    (`eave_reasoning`, `notes`) but writes no pixel geometry for it, so there
+    is nothing to anchor to. Prose is not a position."""
+    return None
+
+
+def first_floor_anchor(run: dict, photo_idx: int, nat_w: float, nat_h: float,
+                       height_ft: float) -> Optional[dict]:
+    """ANCHOR 3 — THE READ'S OWN FIRST-FLOOR OPENING BOXES.
+
+    The LOWEST first-floor box sets the body's BOTTOM (nothing on a wall sits
+    below the first floor). The BIGGEST first-floor box sets the plane SCALE,
+    because its own width is measured in inches and its box is measured in
+    pixels — the read's own evidence, named on the row, never averaged.
+
+    A DORMER opening (`on_dormer`) and a GABLE-PEAK window set NEITHER: the
+    gable window is dropped because it sits ABOVE the wall band that the
+    lowest box plus the run's own wall height describes.
+    """
+    cands = []
+    for o in (_raw(run).get("openings") or []):
+        if not isinstance(o, dict) or o.get("bbox_photo_idx") != photo_idx:
+            continue
+        bb = o.get("bbox") or {}
+        try:
+            w_ft = float(o.get("width_in") or 0) / 12.0
+            box = (float(bb["x"]), float(bb["y"]), float(bb["w"]), float(bb["h"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        if o.get("on_dormer") or not w_ft > 0 or not box[2] > 0:
+            continue
+        cands.append((o, box, w_ft))
+    if not cands:
+        return None
+    low, low_box, low_ft = max(cands, key=lambda c: c[1][1] + c[1][3])
+    bottom_n = low_box[1] + low_box[3]
+    seed_ppf = (low_box[2] * nat_w) / low_ft
+    band_top_n = bottom_n - (height_ft * seed_ppf / nat_h if nat_h else 0)
+    first, dropped = [], []
+    for c in cands:
+        if (c[1][1] + c[1][3]) >= band_top_n:
+            first.append(c)
+        else:
+            dropped.append(c[0].get("opening_id"))
+    if not first:
+        return None
+    big, big_box, big_ft = max(first, key=lambda c: c[1][2])
+    ppf = (big_box[2] * nat_w) / big_ft
+    x_lo = min(c[1][0] for c in first) * nat_w
+    x_hi = max(c[1][0] + c[1][2] for c in first) * nat_w
+    return {
+        "ppf": ppf,
+        "bottom_px": bottom_n * nat_h,
+        "center_px": (x_lo + x_hi) / 2.0,
+        "bottom_from": low.get("opening_id"),
+        "scale_from": big.get("opening_id"),
+        "scale_from_ft": round(big_ft, 2),
+        "scale_from_px": round(big_box[2] * nat_w),
+        "dropped_above_the_wall_band": dropped or None,
+        "first_floor_boxes": len(first),
+    }
+
+
 def build_zone_marks(run: dict, face: str, wall: dict, photo_key: str,
                      nat_w: float, nat_h: float, est_id: str,
                      company_id: str, created_by: Optional[str]) -> List[dict]:
@@ -194,16 +291,55 @@ def build_zone_marks(run: dict, face: str, wall: dict, photo_key: str,
     dormer_h = float((dormer or {}).get("knee_wall_height_ft") or 0)
     has_dormer = bool(dormer and dormer_w > 0 and dormer_h > 0
                       and float(wall.get("dormer_face_sqft") or 0) > 0)
-    # ONE scale for the whole face set, so the body, its gable and its
-    # dormer stay in proportion to each other and all fit the frame.
-    above_ft = max(rise_ft, dormer_h if has_dormer else 0.0)
-    ppf = min(BODY_WIDTH_FRAC * nat_w / width_ft,
-              MAX_SET_HEIGHT_FRAC * nat_h / (height_ft + above_ft))
-    body_w = width_ft * ppf
-    body_h = height_ft * ppf
-    x0 = (nat_w - body_w) / 2.0
-    y1 = BODY_BOTTOM_FRAC * nat_h
-    y0 = y1 - body_h
+    idx = None
+    names = _run_photo_names(run)
+    if photo_key in names:
+        idx = names.index(photo_key)
+    anchor = (first_floor_anchor(run, idx, nat_w, nat_h, height_ft)
+              if idx is not None else None)
+    if anchor:
+        ppf = anchor["ppf"]
+        body_w = width_ft * ppf
+        body_h = height_ft * ppf
+        y1 = anchor["bottom_px"]
+        y0 = y1 - body_h
+        x0 = anchor["center_px"] - body_w / 2.0
+        anchor_note = (
+            f"BOTTOM anchored to the sill line of '{anchor['bottom_from']}' — "
+            "the lowest first-floor opening THE READ boxed on this photo — "
+            "because the wall BASE is not marked here: pull it down to the "
+            "start line. SCALE from '" + str(anchor["scale_from"]) + "' ("
+            f"{anchor['scale_from_ft']} ft wide, {anchor['scale_from_px']} px "
+            "on this photo), the biggest first-floor box the read measured; "
+            "no scale is averaged and no course height is guessed"
+            + (f". Dropped above the wall band (not first floor): "
+               f"{', '.join(anchor['dropped_above_the_wall_band'])}"
+               if anchor["dropped_above_the_wall_band"] else ""))
+    else:
+        above_ft = max(rise_ft, dormer_h if has_dormer else 0.0)
+        ppf = min(BODY_WIDTH_FRAC * nat_w / width_ft,
+                  MAX_SET_HEIGHT_FRAC * nat_h / (height_ft + above_ft))
+        body_w = width_ft * ppf
+        body_h = height_ft * ppf
+        x0 = (nat_w - body_w) / 2.0
+        y1 = BODY_BOTTOM_FRAC * nat_h
+        y0 = y1 - body_h
+        anchor_note = PHOTO_BOTTOM_SENTENCE
+    clamped = []
+    if x0 < 0 or x0 + body_w > nat_w:
+        clamped.append("the sides run past the frame edge")
+    if y0 < 0:
+        clamped.append("the top runs past the frame edge")
+
+    def cl(x, hi):
+        return max(0.0, min(float(x), hi))
+
+    if clamped:
+        anchor_note += (
+            f". The wall as read ({width_ft} ft × {height_ft} ft at this "
+            f"photo's scale) does not fit the frame — {', and '.join(clamped)}"
+            ", so the box is cut at the photo edge: move the sides onto what "
+            "you can actually see")
     src_note = (f"width {wall.get('width_ft_source')}, height "
                 f"{wall.get('height_ft_source')}, confidence "
                 f"{wall.get('confidence')}")
@@ -243,25 +379,34 @@ def build_zone_marks(run: dict, face: str, wall: dict, photo_key: str,
     body_basis = (f"AI STARTING ZONE — the read measured this {face.upper()} "
                   f"face at {width_ft} ft × {height_ft} ft ({src_note}). "
                   + PLACEMENT_SENTENCE
-                  + (f". {disagreement}" if disagreement else ""))
+                  + (f". {disagreement}" if disagreement else "")
+                  + ". " + anchor_note)
     out.append(base("body", "siding_zone", "rect",
-                    [{"x": x0, "y": y0}, {"x": x0 + body_w, "y": y0},
-                     {"x": x0 + body_w, "y": y1}, {"x": x0, "y": y1}],
+                    [{"x": cl(x0, nat_w), "y": cl(y0, nat_h)},
+                     {"x": cl(x0 + body_w, nat_w), "y": cl(y0, nat_h)},
+                     {"x": cl(x0 + body_w, nat_w), "y": cl(y1, nat_h)},
+                     {"x": cl(x0, nat_w), "y": cl(y1, nat_h)}],
                     f"AI {face} body", body_basis,
-                    {"height_readings_disagree": bool(disagreement)}))
+                    {"height_readings_disagree": bool(disagreement),
+                     "anchor": ("first_floor_openings" if anchor
+                                else "photo_bottom_indeterminate"),
+                     "anchor_bottom_from": (anchor or {}).get("bottom_from"),
+                     "anchor_scale_from": (anchor or {}).get("scale_from"),
+                     "px_per_ft": round(ppf, 2)}))
     if rise_ft > 0:
         rise_px = rise_ft * ppf
         out.append(base(
             "gable", "gable", "poly",
-            [{"x": x0, "y": y0},
-             {"x": x0 + body_w / 2.0, "y": y0 - rise_px},
-             {"x": x0 + body_w, "y": y0}],
+            [{"x": cl(x0, nat_w), "y": cl(y0, nat_h)},
+             {"x": cl(x0 + body_w / 2.0, nat_w), "y": cl(y0 - rise_px, nat_h)},
+             {"x": cl(x0 + body_w, nat_w), "y": cl(y0, nat_h)}],
             f"AI {face} gable",
             (f"AI STARTING SHAPE — the read reports a gable RISE of "
              f"{rise_ft} ft on this face; that figure is its own, NOT derived "
              f"from a pitch. The triangle is a starting shape: ½ × width × "
              f"rise comes from the triangle you confirm, in this photo's own "
-             f"scale"),
+             f"scale. It stacks on the body top, in the body's own "
+             f"px-per-foot"),
             {"claimed_gable_rise_ft": rise_ft}))
     if has_dormer:
         d_w = dormer_w * ppf
@@ -271,20 +416,24 @@ def build_zone_marks(run: dict, face: str, wall: dict, photo_key: str,
         except (TypeError, ValueError):
             off = 0.0
         cx = x0 + body_w / 2.0 + off
+        # SEND-145 — THE DORMER SITS ABOVE THE BODY TOP, on the upper-wall /
+        # roof-face region of THIS photo. It never reuses the body's
+        # photo-bottom: that rule is what parked it on the first floor.
         out.append(base(
             "dormer", "dormer", "poly",
-            [{"x": cx - d_w / 2.0, "y": y0},
-             {"x": cx + d_w / 2.0, "y": y0},
-             {"x": cx + d_w / 2.0, "y": y0 - d_h},
-             {"x": cx - d_w / 2.0, "y": y0 - d_h}],
+            [{"x": cl(cx - d_w / 2.0, nat_w), "y": cl(y0, nat_h)},
+             {"x": cl(cx + d_w / 2.0, nat_w), "y": cl(y0, nat_h)},
+             {"x": cl(cx + d_w / 2.0, nat_w), "y": cl(y0 - d_h, nat_h)},
+             {"x": cl(cx - d_w / 2.0, nat_w), "y": cl(y0 - d_h, nat_h)}],
             f"AI {face} dormer",
             (f"AI STARTING SHAPE — the read reports a dormer "
              f"{dormer_w} ft wide × {dormer_h} ft knee wall on this face "
              f"({dormer.get('width_source')}). "
              + (f"UNANCHORED: {unanchored}" if unanchored else
                 "the read anchored this width to a reference in frame")
-             + ". The depth is NOT typed, so the cheeks refuse until you "
-               "type it"),
+             + ". It is placed ABOVE THE BODY TOP, on the upper wall of this "
+               "photo — never at the photo bottom. The depth is NOT typed, so "
+               "the cheeks refuse until you type it"),
             {"claimed_dormer_width_ft": dormer_w,
              "claimed_dormer_knee_ft": dormer_h,
              "unanchored": bool(unanchored),
