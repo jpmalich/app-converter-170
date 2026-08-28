@@ -1,5 +1,57 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-28 SEND-144 — THE HANDOFF: THE READ'S FINDINGS BECOME STARTING ZONES (stamped `2026-08-28 18:15 UTC · 9c62e6b · CLEAN · 3113 passed, 9 skipped, 7 warnings in 469.93s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
+Full record: `memory/send144_report.md` · report probe `memory/send144_probe.py`
+· browser `test_reports/iteration_64.json` (found the entry gap) and
+`iteration_65.json` (**9/9 pass**) · 22 pins in
+`tests/test_send144_zone_handoff_2026_08_28.py`. **No second finder. No
+re-OCR. No quote wiring, no price, no material line. No new mark types.
+RIGHT was never copied from LEFT. No contested height averaged. EST-886440
+untouched. The zones are LEFT IN PLACE on EST-176308 for Howard to move.**
+1. **THE REPORT CAME FIRST**, off the live run `556b9121…` (8 photos, EST-176308):
+   FRONT **27.0 × 10.9** (height `direct_disagreement`, conf 70) + gable rise
+   6.5 → 87.8 ft², 4 openings · BACK **27.0 × 9.7** + rise 7.0 → 94.5 ft², 3
+   openings + 26.2 ft² stone with NO geometry · LEFT **37.0 × 8.4**, dormer
+   14.1 × 3.5 = 47.6 ft² **UNANCHORED**, 5 openings · **RIGHT REFUSED** in the
+   run's own words (*"width (assumed_symmetric). Not measured. Not copied from
+   another face."*). Live numbers governed; nothing was tuned to the check
+   table (heights differed 10.9/9.7/8.4 vs 10.4/9.1/9.85 and were REPORTED).
+2. **BODY ZONE** — a rectangle in the face's own W:H, 80% of the photo's
+   width, centred, near the bottom; the basis says the SHAPE is the run's and
+   **WHERE IT SITS IS A STARTING POSITION, NOT A MEASUREMENT**, and names
+   both contested heights (**10.9 vs 9.0, NOT averaged**, larger used so it
+   can be pulled down).
+3. **GABLE only where the run reports a rise**, using that rise, *"NOT derived
+   from a pitch"*, in the body's own px-per-ft. **DORMER only where the run
+   reports one**, and LEFT's basis carries the run's UNANCHORED sentence.
+   **OPENINGS through the EXISTING proposer** — the new module cannot build an
+   opening at all (a pin forbids the string).
+4. **A REFUSED FACE AND A CORNER SHOT GET NOTHING** and answer in the run's
+   own words (*"a corner shot is NOT a fifth wall … foreshortened"*). RIGHT's
+   unanchored dormer is not parked on a corner shot or on LEFT. The BACK's
+   stone gets no zone: **masks are an INPUT to the read, never an output.**
+5. **PROVISIONAL, KEYED, SAFE TO RE-PULL** — `ai_zone_proposal`, stage 2, keyed
+   `face:<label>:<part>`; a second press adds nothing and overwrites nothing
+   (6 marks before, 6 after, in the browser). Provisional zones **feed no
+   quantity**: siding, gable, J-channel and rake all stay `—`.
+6. **CANDIDATE EDGES** — dashed *starter candidate* / *corner candidate* ×2 /
+   *eave / frieze candidate* on a body zone, **no length, no LF, no key
+   written**; the four trims stay named refusals even with a confirmed body.
+7. **BOTH DOORS** — auto-propose at both of the worker's completion points,
+   plus the per-photo **"starting zones"** button. **A protected estimate gets
+   nothing, not even a provisional zone** (423).
+8. **THE ZONES WERE UNREACHABLE AND THE BROWSER RUN CAUGHT IT**: an annotated
+   photo is a NEW FILE (`ai_<uuid>.jpg`), so the read looked at a different
+   file from the estimate's. **No mapping was guessed** — the preview now
+   carries *"The photos this read read — starting zones live here"*, eight
+   buttons labelled with the READ'S OWN elevation calls, opening the takeoff
+   on the exact file the read read.
+9. **A FOURTH UPLOAD DOOR, FOUND AND CLOSED**: that annotated photo was
+   written to the pod disk ONLY — no object copy, no Mongo blob — so a pod
+   replacement would take the very photo that now carries the zones. It goes
+   to object storage + Mongo now, the disk copy is a cache, and **a failed
+   store REFUSES the read**.
+
 ## 2026-08-28 SEND-143 — NAMES OFF THE TREE, PHASE 2 TRIM ON (stamped `2026-08-28 12:55 UTC · 734c97b · CLEAN · 3091 passed, 9 skipped, 7 warnings in 452.29s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
 Full record: `memory/send143_report.md` · browser `test_reports/iteration_62.json`
 (41/41) + `iteration_63.json`. **Quote wiring OFF. No new mark type. No price.
