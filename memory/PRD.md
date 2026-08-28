@@ -1,5 +1,59 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-28 SEND-143 — NAMES OFF THE TREE, PHASE 2 TRIM ON (stamped `2026-08-28 12:55 UTC · 734c97b · CLEAN · 3091 passed, 9 skipped, 7 warnings in 452.29s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
+Full record: `memory/send143_report.md` · browser `test_reports/iteration_62.json`
+(41/41) + `iteration_63.json`. **Quote wiring OFF. No new mark type. No price.
+No material-list line. EST-886440 untouched** (EST-373526's rig marks and
+scales deleted: `marks left: 0, scales left: None`).
+1. **ITEM 1 — THE RENAME TABLE**: `boni`/`tanis`/`dart` → **`sealed_fixture_c`
+   / `_d` / `_e`** · gate VALUE `letrick_v3` → **`sealed_v3`** in both gates,
+   the fixture doc AND the live EST-373526 doc (1 restamped) · the
+   one-release shim **DELETED** after grep showed ZERO live imports, its
+   manifest line with it · both test files `git mv`'d to `test_sealed_*`
+   with their prose and one test name neutralised. **NO FIGURE CHANGED** —
+   `all_fixture_figures()` is the SAME 28 numbers and FOUR entries are still
+   required; a pin now asserts every OLD key is GONE.
+2. **STILL CARRYING THE NAME, NOT AUTHORISED**: `LETRICK_TAPE_WALLS` in
+   `routes/demo.py`, plus report narratives and demo-fixture customer
+   records under `memory/` and in test prose.
+3. **ITEM 0 — MY SEND-142 REGRESSION, REPORTED THEN CLOSED**: three readers
+   still looked for the photo on the pod disk, so a photo uploaded after
+   SEND-142 answered **404 at the main AI Photo Measure door**.
+   `rehydrate_to_disk` now asks OBJECT STORAGE FIRST, and `ai_measure.py`
+   (measure door + cross-check) and `_photo_natural_size` fetch the photo
+   back before refusing — the refusal still stands when the bytes are
+   nowhere, because **no size is ever guessed**. Live pin: an object with NO
+   Mongo blob comes back byte-identical.
+4. **ITEM 2 REPORT FIRST**: the mark vocabulary is unchanged, so **four of
+   the six trims have nothing to read** — there is no corner tick, no
+   wall-base mark, no eave mark and no wall-height field. Reported before a
+   line was wired, with real numbers off `memory/send143_rig.py`.
+5. **WIRED — J-CHANNEL** = Σ perimeter of the box DRAWN round each confirmed
+   opening (**18.00 LF** on the rig, basis *"perimeter of the box drawn on
+   this photo · 3.0 ft × 6.0 ft · 18.0 LF"*); a TAP refuses by name until it
+   is boxed. **WIRED — GABLE RAKE** = the two rake lines drawn with the
+   triangle, measured as drawn (**36.06 LF**, span 30.0 / rise 10.0),
+   **GABLE ZONE, never a wall run**.
+6. **REFUSED BUT ON SCREEN**: outside corners · inside corners · starter ·
+   soffit · fascia each keep a row, print the em dash and NAME the missing
+   mark ("no wall BASE is marked…", "no EAVE is marked — the roof edge is
+   not invented", "No height is copied from another wall, another photo or
+   another estimate"). **Nothing is hidden and nothing prints 0.**
+7. **23 PINS**: confirmed marks only · tape governs · basis on every
+   measured row · the rake never leaks into a wall lane · no lane defaults
+   to 0 (totals move only behind `is not None`) · `TrimPanel.jsx` is a PURE
+   PRINTER — not one refusal sentence lives in the JSX. Apply writes
+   `photo_j_channel_lf` + `photo_gable_rake_lf`, **quantity only**.
+8. **FOUR PINS UPDATED BY NAME, NONE RELAXED**: the phase-boundary pin (and
+   PHASE1/PHASE2 kinds still do not overlap, so a starter/corner MARK is
+   still refused at the door) · the correction-factor pin (`math.hypot` — a
+   drawn length — allowed; every angle call still banned line by line) · the
+   surface-audit null-return pin · the SEND-142 surface helper now reads
+   `TrimPanel.jsx`.
+9. **SCOPED FOR NEXT SEND, NOT BUILT**: the three missing mark types —
+   **corner tick · wall base · eave** — which unlock starter, both corners,
+   soffit and horizontal fascia.
+
 ## 2026-08-28 SEND-142 ADDENDUM — AN UPLOADED FILE NO LONGER LIVES ON THE POD (stamped `2026-08-28 11:29 UTC · 4adad63 · CLEAN · 3068 passed, 9 skipped, 7 warnings in 435.84s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
 Authorised by Howard 2026-08-28, MINIMUM SCOPE. Full record: the addendum in
 `memory/send142_report.md` · 10 pins in
