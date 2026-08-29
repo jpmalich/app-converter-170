@@ -650,16 +650,29 @@ async def propose_zones_for_photo(db, run: dict, est_id: str, company_id: str,
         # just removed and this is the REBASE that follows.
         if base_mark is None and place_new:
             continue
-        # SEND-147 — A FRESH PROVISIONAL ZONE MAY MOVE TO THE NEW y. A zone
-        # Howard has dragged, confirmed or refused is HUMAN-TOUCHED and it
-        # STAYS — his hand outranks the anchor. The gable and the dormer
-        # stack on the body top, so they travel with a body that moves.
+        # SEND-147 — A FRESH PROVISIONAL ZONE IS RE-PLACED WHOLE on the new
+        # anchor: body, gable and dormer together, since the gable and the
+        # dormer stack on the body top.
+        #
+        # SEND-148 (Howard ruled 2026-08-29) — A HAND NO LONGER BLOCKS A
+        # START LINE HE JUST MARKED: "FRONT's tweaked body should FOLLOW the
+        # wall_base tap. A start line he just marked outranks the old drag.
+        # Do not clear the zone. Do not touch the gable." So on a
+        # HUMAN-TOUCHED BODY only the BOTTOM EDGE is pulled to the line —
+        # the zone is not cleared and not re-placed, his other edges are HIS
+        # and stay — and a touched GABLE or DORMER is not touched at all.
         why = _zone_is_human_touched(cur)
         if why:
-            notes.append(
-                f"'{cur.get('label')}' was not moved: {why} — your hand "
-                "outranks the anchor. Delete it if you want it "
-                "re-placed on the line you tapped")
+            follow = await _bottom_follows_the_line(
+                db, est_id, company_id, cur, base_mark, why)
+            if follow:
+                notes.append(follow)
+                moved.append(dict(m, id=cur["id"]))
+            else:
+                notes.append(
+                    f"'{cur.get('label')}' was not moved: {why} — your hand "
+                    "outranks the anchor. Delete it if you want it "
+                    "re-placed on the line you tapped")
             continue
         stamp = _now()
         await db.photo_takeoff_marks.update_one(
@@ -677,7 +690,9 @@ async def propose_zones_for_photo(db, run: dict, est_id: str, company_id: str,
                f"(y={round(float(base_mark['y']), 1)} px)" if base_mark else
                "the read's own answer, because the wall_base line on this "
                "photo is gone")
-            + ". Nothing you had touched by hand was moved")
+            + ". A body you had moved by hand keeps its own sides and top — "
+              "only its BOTTOM followed the line; a gable or dormer you "
+              "touched was not moved at all")
     for row in (_measurements(run).get("_per_elevation_breakdown") or []):
         if str(row.get("label") or "").lower() == face:
             stone = float(row.get("stone_sqft") or 0)
@@ -695,6 +710,63 @@ async def propose_zones_for_photo(db, run: dict, est_id: str, company_id: str,
                            "mark_id": base_mark["mark_id"]}
                           if base_mark else None),
             "already_there": len(by_ref) or None, "notes": notes or None}
+
+
+async def _bottom_follows_the_line(db, est_id: str, company_id: str,
+                                   cur: dict, base_mark: Optional[dict],
+                                   why: str) -> Optional[str]:
+    """SEND-148 — THE START LINE OUTRANKS THE OLD DRAG, FOR THE BODY ONLY.
+
+    The zone is NOT cleared and NOT re-placed: the two LOWEST vertices of the
+    box he already moved are pulled to the tapped line's y and NOTHING ELSE
+    is touched. His sides and his top are his own evidence and they stay, so
+    the box's height becomes HIS and no longer the read's — the basis says so.
+    A GABLE or a DORMER he touched is left alone entirely, as ruled.
+
+    A CONFIRMED zone whose geometry changes goes back to PROVISIONAL: a
+    confirmation cannot outlive the figure it was given for."""
+    if base_mark is None:
+        return None
+    if str((cur.get("ai") or {}).get("ref_id") or "").split(":")[-1] != "body":
+        return None
+    pts = [dict(p) for p in (cur.get("points") or [])]
+    if len(pts) < 3:
+        return None
+    y = float(base_mark["y"])
+    low = sorted(range(len(pts)), key=lambda i: float(pts[i]["y"]))[-2:]
+    was = round(max(float(p["y"]) for p in pts), 1)
+    if abs(was - y) < 0.5:
+        return None
+    for i in low:
+        pts[i]["y"] = y
+    note = (
+        f"SEND-148 — YOUR START LINE OUTRANKS THE OLD DRAG: the BOTTOM EDGE of "
+        f"'{cur.get('label')}' moved from y={was} px to the wall_base line you "
+        f"tapped (y={round(y, 1)} px). {why.capitalize()}, so nothing else was "
+        "touched — your sides and your top are yours and they stayed, which "
+        "means this box's HEIGHT is now YOURS and not the read's. The zone was "
+        "not cleared and not re-placed, and the ft² still comes from the shape "
+        "you confirm.")
+    upd = {"points": pts, "updated_at": _now(), "rebased_at": _now(),
+           "basis": (cur.get("basis") or "") + " " + note,
+           "ai": dict(cur.get("ai") or {},
+                      anchor="wall_base_mark",
+                      anchor_wall_base_mark=base_mark.get("mark_id"),
+                      anchor_wall_base_y=round(y, 3),
+                      bottom_followed_your_line=True)}
+    if cur.get("status") == "confirmed":
+        upd.update({"status": "provisional", "confirmed_at": None,
+                    "confirmed_by": None, "confirmed_stage": None,
+                    "confirmed_basis": None, "confirmed_after_ai_read": None,
+                    "refused_reason": ("the bottom moved to the wall_base line "
+                                       "you tapped — re-confirm the new "
+                                       "figure")})
+        note += (" It was CONFIRMED, so it went back to PROVISIONAL: a "
+                 "confirmation cannot outlive the figure it was given for.")
+    await db.photo_takeoff_marks.update_one(
+        {"id": cur["id"], "estimate_id": est_id, "company_id": company_id},
+        {"$set": upd})
+    return note
 
 
 def _zone_is_human_touched(cur: dict) -> Optional[str]:

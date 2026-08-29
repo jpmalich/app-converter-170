@@ -223,6 +223,11 @@ def test_it_is_never_copied_from_another_photo_or_another_face():
 
 
 def test_a_human_touched_body_stays_and_a_hand_on_a_mark_is_recorded():
+    """SEND-148 NOTE, BY NAME: Howard later ruled that a start line he JUST
+    MARKED outranks an old drag, so a touched BODY's BOTTOM now follows the
+    line (see test_send148_*). What this pin holds is unchanged: the DETECTOR
+    that recognises a hand, and the fact that a touched GABLE or DORMER is
+    still never moved."""
     from photo_zone_proposals import _zone_is_human_touched as touched
     assert 'upd["human_touched"] = True' in ROUTES
     assert "human_touched" in MODULE
