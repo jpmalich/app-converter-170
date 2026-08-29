@@ -3,7 +3,15 @@
 Howard picked **option 2** on 2026-08-28: *"The start line gets its own stored
 y. That y is the body bottom when it exists."*
 
-Stamp: see the PRD entry for this send (`scripts/handback_green.sh`).
+Stamp, verbatim from `scripts/handback_green.sh`:
+
+```
+RECORDED: 2026-08-29 03:57 UTC · 6815649 · CLEAN
+RESULT: 3153 passed, 9 skipped, 7 warnings in 454.97s (0:07:34)
+CENSUS: census pin GREEN — 6 baselined reads, 0 PENDING_CONVERSION (none); 8 removal(s) logged (see baseline REMOVAL_LOG)
+INGRESS SMOKE: 4 passed in 1.50s
+```
+
 16 pins in `tests/test_send147_wall_base_2026_08_28.py`, plus 2 SEND-143 pins
 and 1 SEND-145 pin updated **BY NAME** and 1 new SEND-143 pin. Live proof on
 EST-176308 through the real API and the real browser, then **my own test taps

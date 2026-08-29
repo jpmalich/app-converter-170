@@ -1,5 +1,70 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-29 SEND-147 — THE WALL-BASE MARK: A HUMAN TWO-TAP START LINE WITH ITS OWN STORED y (stamped `2026-08-29 03:57 UTC · 6815649 · CLEAN · 3153 passed, 9 skipped, 7 warnings in 454.97s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
+Full record: `memory/send147_report.md` · 16 pins in
+`tests/test_send147_wall_base_2026_08_28.py` + 1 new SEND-143 pin, and **3 pins
+updated BY NAME** (SEND-139 point counts, SEND-143 mark-kind set, SEND-145
+anchor order). **NO detector. No corner tick, no eave, no soffit, no fascia. No
+quote wiring, no prices. No second finder, no re-OCR. Nothing copied between
+photos or faces. RIGHT refused. EST-886440 untouched.**
+1. **THE MARK**: `kind: wall_base`, `shape: line`, PHASE 1, **exactly 2
+   points** — *"the LEFT end of the wall base, then the RIGHT end; nothing is
+   padded or truncated to fit"*. It stores `a` (always the LEFT end), `b`, and
+   **`y` — the mean of the two ends, the ONE number the body bottom reads** —
+   in that photo's NATURAL PIXELS, plus `tilt_px` so a sloped tap is visible
+   rather than hidden. It lands PROVISIONAL like every mark.
+2. **IT IS AN ANCHOR, NOT A TRIM TAKEOFF**: **no LF, no price, no length at
+   all** — no `span_px`, no `hypot`, nothing lineal in the record (pinned). The
+   rail cell prints **`anchor · no LF`**. The phase-2 `starter` RUN stays
+   unbuilt and still refuses.
+3. **THE GESTURE** is the two-tap of the scale, on that photo only: tool
+   `photo-takeoff-tool-wall_base`, hints *"Tap the LEFT end of the starter /
+   wall base"* → *"Tap the RIGHT end to finish the start line"*, a second tap
+   under 8 px refused, drawn in its own orange and labelled
+   `WALL BASE·y 348px·provisional`. Its ends drag like any vertex and a drag
+   re-computes the stored y.
+4. **WHEN IT EXISTS IT BEATS THE DOOR SILL AND IT BEATS
+   WINDOW-INDETERMINATE**: *"bottom from wall_base mark on this photo — the
+   start line YOU tapped … which beats every opening: an opening sill is not
+   the wall base"*, `ai.anchor: wall_base_mark`.
+5. **THE TAP ITSELF MOVES THE BOX** — creating, dragging, refusing or deleting
+   a wall_base RE-BASES that photo at once (Howard's test is a tap, not a
+   button press). **A re-base places NOTHING NEW** — a start line is an anchor,
+   not a proposal — and a plain STARTING ZONES press with no line still
+   overwrites nothing.
+6. **THE SCALE NEVER CHANGES**: a start line says WHERE the wall ends, never
+   HOW BIG a foot is. px-per-foot still comes from the read's own biggest
+   first-floor box (LEFT 17.6 px/ft off `left-w3`); with no typed opening the
+   basis says the WIDTH is still 80% of the frame and INDETERMINATE.
+7. **NO MARK → SEND-146 UNCHANGED** (door sill / indeterminate / photo-bottom),
+   and deleting the line puts a FRESH zone back on the read's own answer and
+   says so.
+8. **A HUMAN-TOUCHED ZONE STAYS PUT, WITH THREE WITNESSES**: the PATCH route
+   now stamps `human_touched` on every hand edit; CONFIRMED/REFUSED is a
+   ruling; and — because **Howard tweaked FRONT's edges BEFORE that stamp
+   existed** — a zone updated long after the machine's last write counts as
+   touched too, with `rebased_at` recording the machine's own writes so a
+   re-base never mistakes itself for a hand. On EST-176308 today: **AI front
+   body, AI front gable, AI back gable = TOUCHED (they will not move); AI left
+   body, AI left dormer, AI back body = fresh.**
+9. **THE LEFT TEST, RUN FOR REAL** (API + browser): 314.0 px on the DH sill →
+   tap y=333 → **333.0** → delete → **back to 314.0** → tap y=348 → **348.0**,
+   each move reporting `moved: 2` (the dormer travels with the body top). In the
+   browser the orange line drew where I tapped, the yellow body dropped onto it,
+   and the starter-to-sill strip came INSIDE the box. FRONT and BACK never
+   moved. **Then I DELETED both test lines: there is NO wall_base on any photo
+   of EST-176308 (0 in the collection) and LEFT is back at 314.0 px /
+   `window_sill_indeterminate`. Howard's tap will be the first.**
+10. **ONE SENTENCE THAT WOULD HAVE BECOME A LIE**: the Starter row said *"no
+    wall BASE is marked on this photo"*. With a line present it now says *"a
+    WALL BASE line IS marked on this photo, and it is an ANCHOR ONLY … the
+    starter RUN is not built in this send, so this row stays an em dash rather
+    than a number nobody ruled on"*.
+11. **STILL OPEN, FOR HOWARD**: his tap on LEFT (then I report whether it
+    dropped) · corner tick / eave / soffit / fascia mark types · the
+    object-storage latency flake from SEND-145 item 9.
+
+
 ## 2026-08-29 SEND-146 — CLASSIFY, THEN PLACE: A WINDOW SILL IS MID-WALL (stamped `2026-08-29 02:34 UTC · 74f20bb · CLEAN · 3136 passed, 9 skipped, 7 warnings in 454.45s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
 Full record: `memory/send146_report.md` · probes `memory/send146_probe.py`,
 `send146_probe2.py` · the (d) surgery `memory/send146_repull_left.py` · 11 pins
