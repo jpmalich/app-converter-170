@@ -1,5 +1,60 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-29 SEND-146 — CLASSIFY, THEN PLACE: A WINDOW SILL IS MID-WALL (stamped `2026-08-29 02:34 UTC · 74f20bb · CLEAN · 3136 passed, 9 skipped, 7 warnings in 454.45s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
+Full record: `memory/send146_report.md` · probes `memory/send146_probe.py`,
+`send146_probe2.py` · the (d) surgery `memory/send146_repull_left.py` · 11 pins
+in `tests/test_send146_door_to_grade_2026_08_28.py` + **3 SEND-145 pins updated
+BY NAME**. **No second finder. No re-OCR. No quote wiring, no price. No new
+mark type. No "snap to start line" button. NO drop-from-sill convention and no
+typical sill height. EST-886440 untouched.**
+1. **THE DEFECT**: SEND-145 took the LOWEST first-floor opening's sill as the
+   wall bottom. **That is true only when the opening is a DOOR TO GRADE.** On
+   FRONT it was a garage door and on BACK a patio-door threshold, so both were
+   right; on LEFT the lowest opening is a **Double Hung window** and a window
+   sill is **MID-WALL** — the starter-to-sill strip of siding sat outside the
+   box.
+2. **ITEM 1 — CLASSIFY, off the run's OWN `type`. NO NEW DETECTOR, and `style`
+   NEVER PROMOTES** (a `2-Lite Slider` *window* is a window; an unrecognised
+   type is NOT a door). Per face on EST-176308: **FRONT DOOR-TO-GRADE**
+   (`front-gd1` garage_door, sill 0.784; also gd2 + entry door) · **BACK
+   DOOR-TO-GRADE** (`back-d1-patio` patio_door, 0.715) · **LEFT WINDOW ONLY**
+   (`left-w1/w2/w3` all Double Hung, dormer sliders excluded outright) ·
+   **RIGHT NONE** and still refused.
+3. **ITEM 2 — THE BOTTOM RULE, WIRED**: the lowest **DOOR TO GRADE** sets the
+   bottom and the basis NAMES it with its type · **a window sitting LOWER than
+   the door no longer takes the bottom** and is named (*"A window sill is
+   MID-WALL and set nothing here: …"*) · **window only → INDETERMINATE**,
+   `anchor: window_sill_indeterminate`, `anchor_bottom_from: None`, basis *"no
+   door-to-grade opening on this photo — bottom is not a wall line"* + *"No drop
+   from a sill is invented and no typical sill height is used"* · none → SEND-145's
+   photo-bottom answer · **the SCALE is untouched — a window is an honest RULER
+   even when it is not a FLOOR** (LEFT still 17.6 px/ft off `left-w3`).
+4. **HOWARD'S (c) COULD NOT BE HONOURED AND I STOPPED, AS ORDERED**: the bottom
+   was to be drawn on the `starter_candidate` line already printed on the photo.
+   **THAT LINE HAS NO STORED y** — `CandidateEdges.jsx` builds it at RENDER time
+   from the body zone's own bottom two corners (`a: bl, b: br`), *"no length, no
+   LF, no key written"*, so anchoring the bottom to it is **anchoring the bottom
+   to itself**. Nothing else on that photo carries a base y either: 7 stored
+   marks and not one is a base line, no starter/wall-base/eave mark type exists
+   (SEND-143), and the run's only start-line words are **prose about photo 1, a
+   corner shot** (*"27-course count … with visible start line"*). **No photo-edge
+   fallback and no invented drop was used.**
+5. **SO LEFT'S BOX DID NOT MOVE — ITS CLAIM DID.** Per Howard's own ITEM 2
+   (*"keep the current box top and width"*): `x 5.9 → 640.0` (still cut at the
+   frame), `y 166.2 → 314.0`, and the row now prints **BOTTOM IS
+   INDETERMINATE**. Verified in the browser on the live photo. **The bottom can
+   only move once a real start line exists — that is the next ruling.**
+6. **(d) EXECUTED EXACTLY**: `face:left:body` deleted (exactly ONE provisional
+   body zone; the script refuses otherwise) and that ONE zone re-pulled —
+   **23 marks before, 23 after**, `already_there: 6`, `proposed: 1`. **FRONT
+   (hand-tweaked) not cleared · BACK not cleared · the LEFT dormer, every
+   opening and the LEFT scale not cleared.**
+7. **STILL OPEN, FOR HOWARD**: where LEFT's bottom edge should be DRAWN while it
+   is indeterminate (today: unchanged, and named) · the corner-tick / wall-base /
+   eave mark types, which are the only thing that can make a start line real ·
+   the object-storage latency flake reported in SEND-145 item 9.
+
+
 ## 2026-08-28 SEND-145 — THE ANCHOR WAS WRONG, THE SHAPE WAS FINE: A FIRST-FLOOR SILL IS THE WALL LINE (stamped `2026-08-28 20:54 UTC · 1af496c · CLEAN · 3125 passed, 9 skipped, 7 warnings in 452.09s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
 Full record: `memory/send145_report.md` · probes `memory/send145_probe.py`,
 `send145_probe2.py`, `send145_check.py` · browser

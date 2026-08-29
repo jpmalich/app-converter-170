@@ -1,5 +1,19 @@
 # SEND-146 — ITEM 1 + 3 REPORT, BEFORE A LINE IS WIRED
 
+Stamp, verbatim from `scripts/handback_green.sh`:
+
+```
+RECORDED: 2026-08-29 02:34 UTC · 74f20bb · CLEAN
+RESULT: 3136 passed, 9 skipped, 7 warnings in 454.45s (0:07:34)
+CENSUS: census pin GREEN — 6 baselined reads, 0 PENDING_CONVERSION (none); 8 removal(s) logged (see baseline REMOVAL_LOG)
+INGRESS SMOKE: 4 passed in 1.80s
+```
+
+11 pins in `tests/test_send146_door_to_grade_2026_08_28.py` · 3 SEND-145 pins
+updated BY NAME (the fixture gained the `type` the live rows always carried; the
+"lowest box sets the bottom" pin now holds the CORRECTED rule and names the
+ignored window; the anchor value now names the KIND of opening).
+
 Run `556b9121…` on EST-176308. Every figure below is read off the finished
 run's own opening rows (`memory/send146_probe.py` prints them raw). No second
 finder, no re-OCR, no new detector: the rows already carry **`type`**
@@ -69,7 +83,82 @@ Everything else on LEFT is untouched by this send: the **dormer stays stacked
 above the body top** (14.1 ft × 3.5 ft knee wall, still carrying the run's own
 UNANCHORED sentence), and the gable/opening zones are not re-shaped.
 
-## THE CLEARING QUESTION — STATED, NOT ACTED ON
+## THE ANSWER TO (c) — THE `starter candidate` LINE HAS NO STORED y. I STOPPED.
+
+Howard ruled the LEFT bottom should be drawn on the `starter_candidate` line
+**already printed on that photo**, and — if that line has no stored y — to
+**STOP and say so**, with no fall back to the photo edge and no invented drop.
+
+**IT HAS NO STORED y.** `frontend/src/components/estimate/phototakeoff/CandidateEdges.jsx`
+builds it at RENDER time from the body zone's own bottom two corners:
+
+```js
+const [tl, tr, br, bl] = p;                       // p = the BODY ZONE's points
+{ key: "starter", word: "starter candidate", a: bl, b: br },
+```
+
+It is the body zone's own bottom edge with a word on it — *"no length, no LF,
+no key written"* in its own header. So anchoring the body bottom to it means
+**anchoring the bottom to itself**: circular, exactly as SEND-145's anchor-order
+comment warned at rung 1.
+
+**Everything else I checked on that photo, so the answer is not just about one
+component** (`memory/send146_probe2.py` prints it):
+- **Stored marks on the LEFT photo: 7, and not one is a base line** — 5 AI
+  opening rects, the body zone, the dormer. There is no starter mark, no
+  wall-base mark, no eave mark: SEND-143 left all three as named refusals and
+  SEND-146 was ruled *"no new mark types in this send"*.
+- **The run carries no base geometry either**: `raw_ai` has `starter_lf` (a
+  house-level LF number, not a pixel), and the words *grade*, *foundation* and
+  *ground* appear only in prose. The nearest thing to a start line is LEFT's own
+  reading note — *"27-course count at rear-left corner with **visible start
+  line** (foundation band excluded)"* — and that is **PROSE about photo 1, a
+  corner shot**, not a y on photo 2. Prose is not a position.
+- The rail on that photo already says it out loud: *"no wall BASE is marked on
+  this photo — a zone outline does not say which of its edges is the base…"*
+
+**So the LEFT box's bottom EDGE is drawn exactly where it was** — Howard's own
+ITEM 2 words, *"keep the current box top and width"* — and the basis now
+**refuses to call it a wall line**. The picture has not moved; the claim has.
+**The bottom will only move when a real start line exists** (the mark-type
+send), and that is Howard's ruling to make, not mine.
+
+## WHAT WAS WIRED (ITEMS 1 + 2), AND THE RE-PULLED LEFT BOX
+
+`first_floor_anchor` now classifies before it places, off the row's own
+`type` — **no new detector, and `style` never promotes**: a `2-Lite Slider`
+*window* stays a window; an unrecognised `type` is NOT a door to grade.
+
+- **DOOR TO GRADE** (`garage_door` · `entry_door` · `patio_door` ·
+  `sliding_glass_door` · `slider_door` · `french_door`) → its sill sets the
+  bottom, `anchor: first_floor_door_to_grade`, and the basis names it: *"BOTTOM
+  anchored to the sill line of 'front-gd1' — a DOOR TO GRADE (garage_door)…"*.
+  **A window sitting LOWER than the door no longer takes the bottom** and is
+  named on the row: *"A window sill is MID-WALL and set nothing here: …"*.
+- **WINDOW ONLY** → `anchor: window_sill_indeterminate`,
+  `anchor_bottom_from: None` (nothing is named as the bottom) and
+  `anchor_bottom_sill_of` records what it happens to rest on. Basis: *"BOTTOM IS
+  INDETERMINATE: no door-to-grade opening on this photo — bottom is not a wall
+  line… A WINDOW SILL IS MID-WALL — it does not set the wall bottom. No drop
+  from a sill is invented and no typical sill height is used: the box keeps its
+  TOP and its WIDTH…"*.
+- **NONE** → SEND-145's photo-bottom answer, unchanged and still INDETERMINATE.
+- **THE SCALE IS UNTOUCHED**: a window is an honest RULER even when it is not a
+  FLOOR — LEFT still scales 17.6 px/ft off `left-w3`.
+
+**(d) EXECUTED EXACTLY AS ORDERED** (`memory/send146_repull_left.py`, which
+refuses unless it matches exactly ONE provisional body zone): `face:left:body`
+deleted (1 doc), that one zone re-pulled. **Marks on the estimate: 23 before,
+23 after.** FRONT (hand-tweaked) not cleared · BACK not cleared · the LEFT
+dormer, all openings and the LEFT scale not cleared — the re-pull reported
+`already_there: 6` and `proposed: 1`.
+
+The re-pulled LEFT body, live: `x 5.9 → 640.0` (still cut at the 640-px frame),
+`y 166.2 → 314.0`, `ppf 17.6`, `anchor: window_sill_indeterminate`,
+`bottom_from: None`, `sill_of: left-w1`. Verified in the browser: the box is
+where it was and **"BOTTOM IS INDETERMINATE" now prints on the row**.
+
+
 
 A re-pull is keyed `(run_id, face:left:body)` and **never overwrites a zone
 that is already there**, so with LEFT's current body zone in place the new
