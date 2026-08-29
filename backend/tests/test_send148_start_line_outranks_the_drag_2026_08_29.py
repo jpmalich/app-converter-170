@@ -59,7 +59,7 @@ def _zone(part="body", status="provisional", points=None, **kw):
 
 
 def _run(db, cur, line=LINE, why="you have already moved it by hand"):
-    return asyncio.get_event_loop().run_until_complete(
+    return asyncio.run(
         _bottom_follows_the_line(db, "e", "c", cur, line, why))
 
 
