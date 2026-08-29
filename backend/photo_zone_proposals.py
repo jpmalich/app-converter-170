@@ -55,9 +55,10 @@ HEAD_ON_FACES = ("front", "back", "left", "right")
 #   2. the WALL REF bar                                       — the read
 #      names it in prose only; it writes no pixel geometry for it.
 #   3. THE READ'S OWN FIRST-FLOOR OPENING BOXES — real pixels on the wall,
-#      each with its own measured width. The LOWEST sets the bottom, the
-#      BIGGEST sets the plane scale. A gable-peak window and a dormer
-#      opening set NEITHER.
+#      each with its own measured width. The BIGGEST sets the plane scale.
+#      The bottom is CLASSIFIED first (SEND-146): the lowest DOOR TO GRADE
+#      sets it; a WINDOW sill is MID-WALL and sets nothing. A gable-peak
+#      window and a dormer opening set NEITHER.
 #   4. else the photo bottom at 80% width, and the basis says it is a PHOTO
 #      EDGE, NOT A WALL LINE — indeterminate, never a silent fallback that
 #      looks measured.
@@ -65,6 +66,27 @@ BODY_WIDTH_FRAC = 0.80
 MAX_SET_HEIGHT_FRAC = 0.80
 BODY_BOTTOM_FRAC = 0.92
 ZONE_ORIGIN = "ai_zone_proposal"
+
+# SEND-146 (Howard ruled 2026-08-28, after the field run on SEND-145's boxes):
+# SEND-145 took the LOWEST first-floor opening's sill as the wall bottom. That
+# is true only when the opening is a DOOR TO GRADE. On EST-176308's LEFT the
+# lowest opening is a Double Hung window, and **A WINDOW SILL IS MID-WALL**:
+# the box started at the sills and left the starter-to-sill strip of siding
+# outside it. So the bottom is classified BEFORE it is placed:
+#   DOOR-TO-GRADE → its sill MAY set the body bottom, and the basis NAMES it.
+#   WINDOW        → its sill must NOT set the body bottom: the bottom is
+#                   INDETERMINATE, the box keeps its top and its width, and
+#                   NO drop from the sill and NO typical sill height is used.
+#   NONE          → the photo-bottom answer of SEND-145, unchanged.
+# The classification is a read of the row's OWN `type`, which the run already
+# carries. There is NO new detector, and `style` never promotes a window: a
+# "2-Lite Slider" WINDOW is a window; only a `type` in this tuple is a door.
+DOOR_TO_GRADE_TYPES = ("garage_door", "entry_door", "patio_door",
+                       "sliding_glass_door", "slider_door", "french_door")
+
+WINDOW_SILL_SENTENCE = (
+    "BOTTOM IS INDETERMINATE: no door-to-grade opening on this photo — bottom "
+    "is not a wall line")
 
 PHOTO_BOTTOM_SENTENCE = (
     "no first-floor opening on this photo carries a typed size, so there is "
@@ -217,16 +239,27 @@ def _wall_ref_bar(run: dict, photo_idx: int) -> None:
     return None
 
 
+def _is_door_to_grade(o: dict) -> bool:
+    """A read of the opening row's OWN `type`. `style` is never consulted —
+    a 2-Lite Slider WINDOW is a window; an unrecognised type is NOT a door to
+    grade, so it falls to INDETERMINATE rather than to a guess."""
+    return str(o.get("type") or "").strip().lower() in DOOR_TO_GRADE_TYPES
+
+
 def first_floor_anchor(run: dict, photo_idx: int, nat_w: float, nat_h: float,
                        height_ft: float) -> Optional[dict]:
     """ANCHOR 3 — THE READ'S OWN FIRST-FLOOR OPENING BOXES.
 
-    The LOWEST first-floor box sets the body's BOTTOM (nothing on a wall sits
-    below the first floor). The BIGGEST first-floor box sets the plane SCALE,
-    because its own width is measured in inches and its box is measured in
-    pixels — the read's own evidence, named on the row, never averaged.
+    The BIGGEST first-floor box sets the plane SCALE, because its own width is
+    measured in inches and its box is measured in pixels — the read's own
+    evidence, named on the row, never averaged. A window is an honest RULER.
 
-    A DORMER opening (`on_dormer`) and a GABLE-PEAK window set NEITHER: the
+    The BOTTOM is classified first (SEND-146): the lowest **DOOR TO GRADE**
+    sets it and is NAMED; if the lowest opening is a WINDOW its sill is
+    MID-WALL and sets nothing — the bottom is INDETERMINATE and the box keeps
+    its top and its width.
+
+    A DORMER opening (`on_dormer`) and a GABLE-PEAK window set neither: the
     gable window is dropped because it sits ABOVE the wall band that the
     lowest box plus the run's own wall height describes.
     """
@@ -246,9 +279,9 @@ def first_floor_anchor(run: dict, photo_idx: int, nat_w: float, nat_h: float,
     if not cands:
         return None
     low, low_box, low_ft = max(cands, key=lambda c: c[1][1] + c[1][3])
-    bottom_n = low_box[1] + low_box[3]
+    seed_bottom_n = low_box[1] + low_box[3]
     seed_ppf = (low_box[2] * nat_w) / low_ft
-    band_top_n = bottom_n - (height_ft * seed_ppf / nat_h if nat_h else 0)
+    band_top_n = seed_bottom_n - (height_ft * seed_ppf / nat_h if nat_h else 0)
     first, dropped = [], []
     for c in cands:
         if (c[1][1] + c[1][3]) >= band_top_n:
@@ -257,6 +290,23 @@ def first_floor_anchor(run: dict, photo_idx: int, nat_w: float, nat_h: float,
             dropped.append(c[0].get("opening_id"))
     if not first:
         return None
+    doors = [c for c in first if _is_door_to_grade(c[0])]
+    if doors:
+        low_o, low_obox, _ = max(doors, key=lambda c: c[1][1] + c[1][3])
+        bottom_n = low_obox[1] + low_obox[3]
+        bottom_kind = "door_to_grade"
+        bottom_from = low_o.get("opening_id")
+        bottom_sill_of = None
+        below = [c[0].get("opening_id") for c in first
+                 if not _is_door_to_grade(c[0])
+                 and (c[1][1] + c[1][3]) > bottom_n] or None
+    else:
+        low_o, low_obox, _ = max(first, key=lambda c: c[1][1] + c[1][3])
+        bottom_n = low_obox[1] + low_obox[3]
+        bottom_kind = "window_sill_indeterminate"
+        bottom_from = None
+        bottom_sill_of = low_o.get("opening_id")
+        below = None
     big, big_box, big_ft = max(first, key=lambda c: c[1][2])
     ppf = (big_box[2] * nat_w) / big_ft
     x_lo = min(c[1][0] for c in first) * nat_w
@@ -265,12 +315,18 @@ def first_floor_anchor(run: dict, photo_idx: int, nat_w: float, nat_h: float,
         "ppf": ppf,
         "bottom_px": bottom_n * nat_h,
         "center_px": (x_lo + x_hi) / 2.0,
-        "bottom_from": low.get("opening_id"),
+        "bottom_kind": bottom_kind,
+        "bottom_from": bottom_from,
+        "bottom_sill_of": bottom_sill_of,
+        "bottom_type": str(low_o.get("type") or "") or None,
+        "bottom_style": str(low_o.get("style") or "") or None,
+        "windows_below_the_door": below,
         "scale_from": big.get("opening_id"),
         "scale_from_ft": round(big_ft, 2),
         "scale_from_px": round(big_box[2] * nat_w),
         "dropped_above_the_wall_band": dropped or None,
         "first_floor_boxes": len(first),
+        "doors_to_grade": [c[0].get("opening_id") for c in doors] or None,
     }
 
 
@@ -304,17 +360,36 @@ def build_zone_marks(run: dict, face: str, wall: dict, photo_key: str,
         y1 = anchor["bottom_px"]
         y0 = y1 - body_h
         x0 = anchor["center_px"] - body_w / 2.0
-        anchor_note = (
-            f"BOTTOM anchored to the sill line of '{anchor['bottom_from']}' — "
-            "the lowest first-floor opening THE READ boxed on this photo — "
-            "because the wall BASE is not marked here: pull it down to the "
-            "start line. SCALE from '" + str(anchor["scale_from"]) + "' ("
+        scale_note = (
+            "SCALE from '" + str(anchor["scale_from"]) + "' ("
             f"{anchor['scale_from_ft']} ft wide, {anchor['scale_from_px']} px "
             "on this photo), the biggest first-floor box the read measured; "
             "no scale is averaged and no course height is guessed"
             + (f". Dropped above the wall band (not first floor): "
                f"{', '.join(anchor['dropped_above_the_wall_band'])}"
                if anchor["dropped_above_the_wall_band"] else ""))
+        if anchor["bottom_kind"] == "door_to_grade":
+            anchor_note = (
+                f"BOTTOM anchored to the sill line of '{anchor['bottom_from']}'"
+                f" — a DOOR TO GRADE ({anchor['bottom_type']}) THE READ boxed "
+                "on this photo — because the wall BASE is not marked here: "
+                "pull it down to the start line. "
+                + scale_note
+                + (". A window sill is MID-WALL and set nothing here: "
+                   f"{', '.join(anchor['windows_below_the_door'])}"
+                   if anchor["windows_below_the_door"] else ""))
+        else:
+            anchor_note = (
+                WINDOW_SILL_SENTENCE
+                + f". The lowest first-floor opening the read boxed is "
+                f"'{anchor['bottom_sill_of']}' ({anchor['bottom_type']}"
+                + (f", {anchor['bottom_style']}" if anchor["bottom_style"] else "")
+                + "), and A WINDOW SILL IS MID-WALL — it does not set the wall "
+                  "bottom. No drop from a sill is invented and no typical sill "
+                  "height is used: the box keeps its TOP and its WIDTH and the "
+                  "bottom edge is only drawn where that sill happens to be — "
+                  "pull it down to the start line. "
+                + scale_note)
     else:
         above_ft = max(rise_ft, dormer_h if has_dormer else 0.0)
         ppf = min(BODY_WIDTH_FRAC * nat_w / width_ft,
@@ -388,9 +463,13 @@ def build_zone_marks(run: dict, face: str, wall: dict, photo_key: str,
                      {"x": cl(x0, nat_w), "y": cl(y1, nat_h)}],
                     f"AI {face} body", body_basis,
                     {"height_readings_disagree": bool(disagreement),
-                     "anchor": ("first_floor_openings" if anchor
-                                else "photo_bottom_indeterminate"),
+                     "anchor": (
+                         ("first_floor_door_to_grade"
+                          if anchor["bottom_kind"] == "door_to_grade"
+                          else "window_sill_indeterminate") if anchor
+                         else "photo_bottom_indeterminate"),
                      "anchor_bottom_from": (anchor or {}).get("bottom_from"),
+                     "anchor_bottom_sill_of": (anchor or {}).get("bottom_sill_of"),
                      "anchor_scale_from": (anchor or {}).get("scale_from"),
                      "px_per_ft": round(ppf, 2)}))
     if rise_ft > 0:

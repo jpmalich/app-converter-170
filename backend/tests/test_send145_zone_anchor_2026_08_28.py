@@ -34,16 +34,19 @@ MODULE = pathlib.Path("/app/backend/photo_zone_proposals.py").read_text()
 W, H = 1000.0, 800.0
 
 
-def _op(oid, x, y, w, h, width_in, on_dormer=False):
+def _op(oid, x, y, w, h, width_in, on_dormer=False, otype="window"):
+    # SEND-146 PIN UPDATE, BY NAME: the fixture now carries the `type` the live
+    # opening rows have always carried, because a bottom is CLASSIFIED before
+    # it is placed — a door to grade may set it, a window sill may not.
     return {"opening_id": oid, "bbox_photo_idx": 0, "width_in": width_in,
-            "on_dormer": on_dormer,
+            "on_dormer": on_dormer, "type": otype,
             "bbox": {"x": x, "y": y, "w": w, "h": h}}
 
 
 #  a wall 30 ft × 10 ft: a garage door (9 ft) low on the wall, a small window
 #  beside it, a GABLE window up in the peak and a DORMER window.
 OPENINGS = [
-    _op("gd1", 0.30, 0.55, 0.18, 0.15, 108),        # 9 ft over 180 px → 20 px/ft
+    _op("gd1", 0.30, 0.55, 0.18, 0.15, 108, otype="garage_door"),  # 9 ft / 180 px
     _op("w1", 0.55, 0.58, 0.05, 0.09, 30),
     _op("gable-w", 0.45, 0.18, 0.06, 0.05, 36),     # up in the peak
     _op("dormer-w", 0.62, 0.20, 0.06, 0.04, 40, on_dormer=True),
@@ -89,15 +92,19 @@ def test_the_bottom_is_the_lowest_first_floor_sill_and_the_scale_is_the_biggest_
 
 
 def test_the_lowest_box_sets_the_bottom_even_when_another_box_sets_the_scale():
-    """The two choices are INDEPENDENT: drop a small window BELOW the garage
-    door and the bottom follows the window while the scale stays on the
-    garage door — nothing is averaged and neither choice borrows the other."""
+    """SEND-146 PIN UPDATE, BY NAME — the rule this pin held was CORRECTED by
+    Howard's field run: the two choices are still INDEPENDENT, but a WINDOW
+    dropped below the garage door no longer takes the bottom, because a window
+    sill is MID-WALL. The DOOR still governs, and the ignored window is NAMED.
+    The scale still comes from the biggest box, untouched."""
     low_win = _op("w-low", 0.55, 0.66, 0.05, 0.09, 30)   # sill at 0.75
     a = first_floor_anchor(_run(openings=[OPENINGS[0], low_win,
                                           OPENINGS[2], OPENINGS[3]]),
                            0, W, H, 10.0)
-    assert a["bottom_from"] == "w-low"
-    assert round(a["bottom_px"] / H, 3) == 0.750
+    assert a["bottom_from"] == "gd1"
+    assert a["bottom_kind"] == "door_to_grade"
+    assert a["windows_below_the_door"] == ["w-low"]
+    assert round(a["bottom_px"] / H, 3) == 0.700
     assert a["scale_from"] == "gd1"
     assert round(a["ppf"], 2) == 20.0
 
@@ -130,7 +137,9 @@ def test_the_body_bottom_is_a_wall_line_and_says_to_pull_it_to_the_start_line():
     assert "BOTTOM anchored to the sill line of 'gd1'" in body["basis"]
     assert "the wall BASE is not marked here" in body["basis"]
     assert "pull it down to the start line" in body["basis"]
-    assert body["ai"]["anchor"] == "first_floor_openings"
+    # SEND-146 PIN UPDATE, BY NAME: the value now names WHICH kind of opening
+    # the bottom came from — a door to grade, never just "an opening".
+    assert body["ai"]["anchor"] == "first_floor_door_to_grade"
 
 
 def test_the_gable_stacks_on_the_body_top_in_the_bodys_own_scale():
@@ -177,7 +186,8 @@ def test_no_first_floor_typed_size_falls_back_and_calls_itself_indeterminate():
 
 
 def test_a_box_with_no_size_is_never_used_for_scale():
-    run = _run(openings=[_op("gd1", 0.3, 0.55, 0.18, 0.15, 108),
+    run = _run(openings=[_op("gd1", 0.3, 0.55, 0.18, 0.15, 108,
+                             otype="garage_door"),
                          _op("untyped", 0.5, 0.60, 0.30, 0.12, 0)])
     a = first_floor_anchor(run, 0, W, H, 10.0)
     assert a["scale_from"] == "gd1"               # the untyped box is ignored
