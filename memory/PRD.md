@@ -1,5 +1,50 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-29 SEND-149 — THE EAVE MARK: THE TOP GETS THE SAME KIND OF EVIDENCE AS THE BOTTOM (stamped `2026-08-29 17:00 UTC · 3bf7eaa · CLEAN · 3175 passed, 9 skipped, 7 warnings in 500.90s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
+Full record: `memory/send149_report.md` · 15 pins in
+`tests/test_send149_eave_mark_2026_08_29.py` · **6 pins updated BY NAME**
+(SEND-139 point counts, SEND-143 kind set, SEND-147 ×4). **No AI eave finder.
+No soffit, fascia, corner tick or J-channel. No quote wiring, no prices. No
+second finder, no re-OCR. Nothing copied between photos or faces. The gable and
+the dormer are not reshaped. RIGHT refused. EST-886440 untouched.**
+1. **HIS FIELD CHECK FIRST**: *"Left / Front / Back bottoms sit on the starter
+   he tapped. Lawn out. Left dormer on the bump-out. Right empty."* Confirmed in
+   the data: three `wall_base` lines he tapped at 16:48–16:49 UTC — FRONT
+   y=1389.427 (tilt 15.4), LEFT y=325.289 (tilt 1.4), BACK y=765.553 (tilt
+   6.1) — and all three bodies sit on them with `anchor: wall_base_mark`. **I
+   did not touch one of his lines.**
+2. **THE MARK**: `kind: eave`, `shape: line`, PHASE 1, **exactly 2 points** —
+   *"the LEFT end of the eave / frieze, then the RIGHT end"* (a one-tap POST is
+   a 400). It stores `a` (always the LEFT end), `b`, **`y` — the mean, the ONE
+   number the body top reads** — and `tilt_px`, in that photo's natural pixels,
+   against ONE photo_key. PROVISIONAL. **No LF, no price, no length**; the rail
+   cell prints `anchor · no LF`.
+3. **IT SETS THE BODY TOP**: *"top from eave mark on this photo — the frieze YOU
+   tapped"*, `ai.top_anchor: eave_mark`. **Only the two HIGHEST vertices move,
+   not one x changes, and the bottom does not move** — proven live on BACK:
+   top `438.0 → 442.0`, bottom `765.6` unchanged, x span unchanged.
+4. **THE HEIGHT BECOMES THE SPAN BETWEEN TWO LINES HE TAPPED**, with both
+   figures printed and **neither averaged**; the read's claim stays recorded in
+   `ai.claimed_height_ft`.
+5. **A HAND-MOVED BODY FOLLOWS THE EAVE ON ITS TOP** (SEND-148's ruling, other
+   end): zone not cleared, his sides and bottom kept, sentence appended to his
+   own basis, and **a CONFIRMED body drops back to PROVISIONAL**. **No eave mark
+   → the top stays exactly as it is.** An eave tapped at or below the bottom is
+   **refused in words** and moves nothing.
+6. **THE GABLE AND THE DORMER STAY**: an eave tap re-bases with `scope="body"`
+   and every other zone is refused by name. **A CROSSED DORMER IS REPORTED, NOT
+   AUTO-FIXED** — the note names both y's and says *"NOTHING was auto-fixed …
+   reported for you to settle"*.
+7. **THE SOFFIT AND FASCIA ROWS STOP LYING**: with an eave line present they say
+   the line IS marked and is an **ANCHOR ONLY**, *"a frieze line is not a soffit
+   and it is not a fascia"* — still em dashes, still no LF.
+8. **NO DELETE-BY-KIND, EVER AGAIN** (SEND-148's lesson): the one test line's id
+   was recorded at creation and only that id was deleted.
+9. **WAITING ON HOWARD**: he taps EAVE on FRONT, LEFT and BACK; then I report
+   per face whether the TOP moved to his line and the BOTTOM stayed put. No
+   eave mark exists on any photo right now.
+
+
 ## 2026-08-29 SEND-148 — A START LINE HE JUST MARKED OUTRANKS THE OLD DRAG (stamped `2026-08-29 12:58 UTC · 85ee83a · CLEAN · 3160 passed, 9 skipped, 7 warnings in 437.86s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
 Full record: `memory/send148_report.md` · 7 pins in
 `tests/test_send148_start_line_outranks_the_drag_2026_08_29.py` · 1 SEND-147
