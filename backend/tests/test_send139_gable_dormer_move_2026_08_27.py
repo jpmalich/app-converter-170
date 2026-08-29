@@ -77,7 +77,9 @@ def test_gable_and_dormer_are_phase_1_kinds_of_this_editor():
 
 
 def test_the_shapes_are_exact_a_triangle_and_a_quad():
-    assert KIND_POINTS == {"gable": 3, "dormer": 4}
+    # SEND-147 PIN UPDATE, BY NAME: the wall-base line joined the exact-count
+    # table (2 ends). The gable is still a triangle and the dormer a quad.
+    assert KIND_POINTS == {"gable": 3, "dormer": 4, "wall_base": 2}
     assert _gable_figure(_gable(TRI[:2]), [], IPP)["refusal"]
     assert _dormer_figure(_dormer(QUAD[:3]), [], IPP)["refusal"]
 
