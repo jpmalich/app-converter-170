@@ -214,8 +214,10 @@ def test_no_new_mark_type_was_smuggled_in():
     RUNS are still rejected at the door and the starter LANE still prints an
     em dash."""
     from routes.photo_takeoff import PHASE1_KINDS, PHASE2_KINDS
+    # SEND-149 PIN UPDATE, BY NAME: `eave` is the second authorised kind, and
+    # it is an ANCHOR too — the soffit and fascia RUNS are still not built.
     assert PHASE1_KINDS == {"siding_zone", "non_siding_zone", "opening",
-                            "gable", "dormer", "wall_base"}
+                            "gable", "dormer", "wall_base", "eave"}
     for k in ("outside_corner", "inside_corner", "starter", "soffit",
               "fascia", "j_channel"):
         assert k in PHASE2_KINDS and k not in PHASE1_KINDS

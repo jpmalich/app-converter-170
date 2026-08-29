@@ -66,12 +66,16 @@ GABLE_KINDS = {"gable", "dormer"}
 # It stores `a`, `b` and its `y` in this photo's own natural pixels and it
 # writes NO LF and no price — THIS IS AN ANCHOR, NOT A TRIM TAKEOFF. The
 # phase-2 `starter` RUN stays unbuilt and still refuses by name.
-ANCHOR_KINDS = {"wall_base"}
+# SEND-149 (Howard ruled 2026-08-29) — THE EAVE MARK. The same two-tap, the
+# same discipline, for the OTHER end of the wall: tap 1 = the LEFT end of the
+# eave / frieze, tap 2 = the RIGHT end. It sets the BODY TOP and it carries no
+# LF either. Soffit, fascia, corner ticks and J-channel are NOT in this send.
+ANCHOR_KINDS = {"wall_base", "eave"}
 PHASE1_KINDS = AREA_KINDS | OPENING_KINDS | GABLE_KINDS | ANCHOR_KINDS
 # Exact point counts — a gable is a triangle, a dormer face is a quad and a
 # wall base is the two ends of one line. A wrong count is refused by name,
 # never padded or truncated.
-KIND_POINTS = {"gable": 3, "dormer": 4, "wall_base": 2}
+KIND_POINTS = {"gable": 3, "dormer": 4, "wall_base": 2, "eave": 2}
 # The annotator's own pitch presets, carried over verbatim.
 GABLE_PITCH_PRESETS = (4, 5, 6, 7, 8, 9, 10, 12)
 GABLE_PITCH_MIN = 3
@@ -111,6 +115,15 @@ def _wall_base_record(pts: List[dict]) -> dict:
     return {"a": a, "b": b, "y": round((a["y"] + b["y"]) / 2.0, 3),
             "units": "natural pixels of this photo",
             "tilt_px": round(abs(b["y"] - a["y"]), 3)}
+
+
+EAVE_BASIS = (
+    "EAVE — the frieze line you tapped on THIS photo. It stores its two ends "
+    "and its own y in this photo's natural pixels, and it is an ANCHOR, NOT A "
+    "TRIM RUN: no LF is written for it, it is never priced, and it is never "
+    "copied to another photo or another face. While it exists, the AI body "
+    "zone's TOP on this photo comes from this line. It is not a soffit and it "
+    "is not a fascia — neither of those is built.")
 
 
 WALL_BASE_BASIS = (
@@ -823,6 +836,15 @@ def _trim_rows(marks: List[dict], masks: List[dict],
             # send writes NO LF for it. The starter RUN stays unbuilt and the
             # row still prints the em dash.
             refusal = TRIM_REFUSALS[key]
+            if key in ("soffit", "fascia") and any(m.get("kind") == "eave"
+                                                   for m in marks):
+                refusal = (
+                    "an EAVE line IS marked on this photo, and it is an "
+                    "ANCHOR ONLY — SEND-149 built it to set the AI body top "
+                    "and writes NO LF for it. A frieze line is not a soffit "
+                    "and it is not a fascia: neither run is built in this "
+                    "send, so this row stays an em dash rather than a number "
+                    "nobody ruled on")
             if key == "starter" and any(m.get("kind") == "wall_base"
                                         for m in marks):
                 refusal = (
@@ -1181,6 +1203,8 @@ async def add_mark(est_id: str, body: MarkIn,
                        if body.kind == "gable" else
                        "the LEFT end of the wall base, then the RIGHT end"
                        if body.kind == "wall_base" else
+                       "the LEFT end of the eave / frieze, then the RIGHT end"
+                       if body.kind == "eave" else
                        "bottom-left, bottom-right, top-right, top-left")
                     + "; nothing is padded or truncated to fit"))
     if len(pts) < need:
@@ -1204,10 +1228,11 @@ async def add_mark(est_id: str, body: MarkIn,
         "id": str(uuid4()), "estimate_id": est_id,
         "company_id": user["company_id"], "photo_key": body.photo_key,
         "kind": body.kind,
-        "shape": "line" if body.kind == "wall_base" else body.shape,
+        "shape": "line" if body.kind in ANCHOR_KINDS else body.shape,
         "points": pts,
         "wall_base": (_wall_base_record(pts) if body.kind == "wall_base"
                       else None),
+        "eave": _wall_base_record(pts) if body.kind == "eave" else None,
         "category": body.category, "label": body.label,
         "style": body.style, "width_in": body.width_in,
         "height_in": body.height_in,
@@ -1220,6 +1245,7 @@ async def add_mark(est_id: str, body: MarkIn,
         "source": body.source, "status": "provisional",
         "origin": origin, "stage": stage,
         "basis": (WALL_BASE_BASIS if body.kind == "wall_base"
+                  else EAVE_BASIS if body.kind == "eave"
                   else _origin_basis(origin, stage)),
         "ai": None,
         "confirmed_at": None, "confirmed_by": None, "confirmed_stage": None,
@@ -1233,8 +1259,9 @@ async def add_mark(est_id: str, body: MarkIn,
     # zones already on this photo are re-placed against it at once. Nothing
     # new is placed, and a zone touched by hand stays where it was put.
     rebase = (await rebase_zones_for_photo(
-        db, est_id, user["company_id"], body.photo_key, user.get("email"))
-        if body.kind == "wall_base" else None)
+        db, est_id, user["company_id"], body.photo_key, user.get("email"),
+        scope="body" if body.kind == "eave" else "all")
+        if body.kind in ANCHOR_KINDS else None)
     return {"ok": True, "mark": _mark_public(doc), "rebase": rebase}
 
 
@@ -1269,8 +1296,8 @@ async def patch_mark(est_id: str, mark_id: str, body: MarkPatch,
             raise HTTPException(status_code=400,
                                 detail=f"a mark needs {need} point(s)")
         upd["points"] = pts
-        if cur.get("kind") == "wall_base":
-            upd["wall_base"] = _wall_base_record(pts)
+        if cur.get("kind") in ANCHOR_KINDS:
+            upd[cur["kind"]] = _wall_base_record(pts)
         if cur.get("status") == "confirmed":
             upd.update({"status": "provisional", "confirmed_at": None,
                         "confirmed_by": None, "confirmed_stage": None,
@@ -1364,8 +1391,9 @@ async def patch_mark(est_id: str, mark_id: str, body: MarkPatch,
     await db.photo_takeoff_marks.update_one(key, {"$set": upd})
     doc = await db.photo_takeoff_marks.find_one(key)
     rebase = (await rebase_zones_for_photo(
-        db, est_id, user["company_id"], cur["photo_key"], user.get("email"))
-        if cur.get("kind") == "wall_base" else None)
+        db, est_id, user["company_id"], cur["photo_key"], user.get("email"),
+        scope="body" if cur.get("kind") == "eave" else "all")
+        if cur.get("kind") in ANCHOR_KINDS else None)
     return {"ok": True, "mark": _mark_public(doc), "rebase": rebase}
 
 
@@ -1383,8 +1411,9 @@ async def delete_mark(est_id: str, mark_id: str,
     # provisional zone goes back to the read's own answer, and a zone
     # touched by hand stays exactly where the hand left it.
     rebase = (await rebase_zones_for_photo(
-        db, est_id, user["company_id"], cur["photo_key"], user.get("email"))
-        if (cur or {}).get("kind") == "wall_base" else None)
+        db, est_id, user["company_id"], cur["photo_key"], user.get("email"),
+        scope="body" if (cur or {}).get("kind") == "eave" else "all")
+        if (cur or {}).get("kind") in ANCHOR_KINDS else None)
     return {"ok": True, "deleted": mark_id, "rebase": rebase}
 
 

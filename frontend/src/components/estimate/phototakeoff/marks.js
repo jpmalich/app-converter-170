@@ -9,6 +9,9 @@ export const DORMER = "#0EA5E9";                       // the annotator's dormer
 // SEND-147 — THE WALL-BASE MARK. A human two-tap start line, its own colour
 // so it never reads as a zone edge or a trim run.
 export const WALL_BASE = "#F97316";
+// SEND-149 — THE EAVE MARK. The frieze line, its own colour so it never reads
+// as a soffit or a fascia run — neither of those is built.
+export const EAVE = "#A855F7";
 // The drawing gesture, carried over word for word from the annotator.
 export const TAP_ORDER = {
   gable: ["Tap the LEFT EAVE point of the gable.", "Tap the PEAK (ridge) point.",
@@ -17,6 +20,8 @@ export const TAP_ORDER = {
     "Tap the TOP-RIGHT corner.", "Tap the TOP-LEFT corner to finish the face."],
   wall_base: ["Tap the LEFT end of the starter / wall base.",
     "Tap the RIGHT end to finish the start line."],
+  eave: ["Tap the LEFT end of the eave / frieze.",
+    "Tap the RIGHT end to finish the eave line."],
 };
 export const CATEGORIES = [                            // the annotator's own zone colours
   { key: "brick", name: "Brick", color: "#B45309" },
@@ -32,6 +37,7 @@ export const markColor = (m) => {
   if (m.kind === "gable") return GABLE;
   if (m.kind === "dormer") return DORMER;
   if (m.kind === "wall_base") return WALL_BASE;
+  if (m.kind === "eave") return EAVE;
   return (CATEGORIES.find((c) => c.key === m.category) || CATEGORIES[4]).color;
 };
 export const kindLabel = (m) => (m.kind === "siding_zone" ? "SIDING"
@@ -39,4 +45,5 @@ export const kindLabel = (m) => (m.kind === "siding_zone" ? "SIDING"
     : m.kind === "dormer" ? "DORMER"
       : m.kind === "opening" ? "OPENING"
         : m.kind === "wall_base" ? "WALL BASE"
+          : m.kind === "eave" ? "EAVE"
     : (CATEGORIES.find((c) => c.key === m.category)?.name || "NON-SIDING").toUpperCase());

@@ -226,33 +226,47 @@ def _dormer_for(run: dict, face: str) -> tuple[Optional[dict], Optional[str]]:
     return d, unanchored
 
 
-def _base_mark_line(marks_on_photo) -> Optional[dict]:
-    """ANCHOR 1 — THE WALL-BASE MARK (SEND-147, Howard's option 2). Real at
-    last: a human two-tap on THAT photo, stored as kind `wall_base` with its
-    own `a`, `b` and `y`. When one exists it BEATS the door sill and it BEATS
-    the window-indeterminate answer.
+def _two_tap_line_mark(marks_on_photo, kind: str) -> Optional[dict]:
+    """The tapped two-tap ANCHOR of one `kind` on THIS photo — `wall_base`
+    (SEND-147, the body BOTTOM) or `eave` (SEND-149, the body TOP).
 
     A REFUSED line is not an anchor. A CONFIRMED one wins over a provisional
     one, and among equals the LATEST tap governs — the contractor's most
-    recent word about his own start line. Nothing is copied from another
-    photo: the caller only ever passes THIS photo's marks."""
+    recent word about his own line. Nothing is copied from another photo: the
+    caller only ever passes THIS photo's marks."""
     best = None
     for m in (marks_on_photo or []):
-        if m.get("kind") != "wall_base" or m.get("status") == "refused":
+        if m.get("kind") != kind or m.get("status") == "refused":
             continue
-        wb = m.get("wall_base") or {}
+        rec = m.get(kind) or {}
         try:
-            y = float(wb["y"])
+            y = float(rec["y"])
         except (KeyError, TypeError, ValueError):
             continue
         rank = (1 if m.get("status") == "confirmed" else 0,
                 str(m.get("updated_at") or m.get("created_at") or ""))
         if best is None or rank > best[0]:
-            best = (rank, {"y": y, "a": wb.get("a"), "b": wb.get("b"),
-                           "tilt_px": wb.get("tilt_px"),
+            best = (rank, {"y": y, "a": rec.get("a"), "b": rec.get("b"),
+                           "tilt_px": rec.get("tilt_px"), "kind": kind,
                            "status": m.get("status"), "mark_id": m.get("id")})
     return best[1] if best else None
 
+
+def _base_mark_line(marks_on_photo) -> Optional[dict]:
+    """ANCHOR 1 — THE WALL-BASE MARK (SEND-147, Howard's option 2). A human
+    two-tap on THAT photo, stored as kind `wall_base` with its own `a`, `b`
+    and `y`. When one exists it BEATS the door sill and it BEATS the
+    window-indeterminate answer."""
+    return _two_tap_line_mark(marks_on_photo, "wall_base")
+
+
+def _eave_mark_line(marks_on_photo) -> Optional[dict]:
+    """SEND-149 — THE EAVE MARK. The same gesture at the OTHER end of the
+    wall: when one exists on that photo it sets the BODY TOP, and the box's
+    height stops being the read's claim and becomes the span between two
+    lines the contractor tapped. No eave mark → the top stays exactly as it
+    is."""
+    return _two_tap_line_mark(marks_on_photo, "eave")
 
 def _wall_ref_bar(run: dict, photo_idx: int) -> None:
     """ANCHOR 2 — the WALL REF bar. The read NAMES it in prose
@@ -366,14 +380,19 @@ def _scale_note(anchor: dict) -> str:
 def build_zone_marks(run: dict, face: str, wall: dict, photo_key: str,
                      nat_w: float, nat_h: float, est_id: str,
                      company_id: str, created_by: Optional[str],
-                     base_mark: Optional[dict] = None) -> List[dict]:
+                     base_mark: Optional[dict] = None,
+                     eave_mark: Optional[dict] = None) -> List[dict]:
     """The starting shapes for ONE face, in that photo's own pixels. Every
     figure comes from `run`; the placement is stated as a placement.
 
     SEND-147 — a WALL_BASE mark on this photo (`base_mark`) sets the body
     bottom and BEATS both opening answers. The plane SCALE still comes from
     the read's own biggest first-floor box: a start line says WHERE the wall
-    ends, never HOW BIG a foot is."""
+    ends, never HOW BIG a foot is.
+
+    SEND-149 — an EAVE mark (`eave_mark`) sets the body TOP the same way, and
+    then the box's HEIGHT is the span between two lines HE tapped instead of
+    the read's claim. Both figures are printed and neither is averaged."""
     width_ft = float(wall.get("width_ft") or 0)
     if not width_ft > 0 or not (nat_w > 0 and nat_h > 0):
         return []
@@ -466,6 +485,35 @@ def build_zone_marks(run: dict, face: str, wall: dict, photo_key: str,
         y1 = BODY_BOTTOM_FRAC * nat_h
         y0 = y1 - body_h
         anchor_note = PHOTO_BOTTOM_SENTENCE
+    # SEND-149 — THE TOP COMES FROM THE EAVE MARK WHEN ONE IS TAPPED. The
+    # bottom does not move, not one x changes, and the height the two lines
+    # imply is NAMED beside the read's own claim — never averaged with it.
+    eave_y = None
+    if eave_mark:
+        try:
+            eave_y = float(eave_mark["y"])
+        except (KeyError, TypeError, ValueError):
+            eave_y = None
+    if eave_y is not None:
+        if eave_y < y1 - 1:
+            marked_ft = round((y1 - eave_y) / ppf, 2)
+            y0 = eave_y
+            body_h = y1 - y0
+            anchor_note += (
+                ". top from eave mark on this photo — the frieze YOU tapped ("
+                f"{eave_mark.get('status')}, y={round(eave_y, 1)} px"
+                + (f", tilt {eave_mark.get('tilt_px')} px across its two ends"
+                   if eave_mark.get("tilt_px") else "")
+                + f"), so this box's HEIGHT is the span between two lines you "
+                f"tapped: {marked_ft} ft at this photo's scale, NOT the read's "
+                f"{height_ft} ft claim. Both figures are printed and neither is "
+                "averaged")
+        else:
+            anchor_note += (
+                f". The eave line you tapped (y={round(eave_y, 1)} px) sits at "
+                "or BELOW this box's bottom, so it cannot be a top: the TOP was "
+                "NOT moved and nothing was guessed — re-tap the frieze above "
+                "the start line")
     clamped = []
     if x0 < 0 or x0 + body_w > nat_w:
         clamped.append("the sides run past the frame edge")
@@ -535,6 +583,12 @@ def build_zone_marks(run: dict, face: str, wall: dict, photo_key: str,
                                if anchor["bottom_kind"] == "door_to_grade"
                                else "window_sill_indeterminate") if anchor
                          else "photo_bottom_indeterminate"),
+                     "top_anchor": ("eave_mark" if eave_y is not None
+                                    and eave_y < y1 - 1
+                                    else "read_height_claim"),
+                     "anchor_eave_mark": (eave_mark or {}).get("mark_id"),
+                     "anchor_eave_y": (round(eave_y, 3)
+                                       if eave_y is not None else None),
                      "anchor_wall_base_mark": (base_mark or {}).get("mark_id"),
                      "anchor_wall_base_y": (round(base_y, 3)
                                             if base_y is not None else None),
@@ -604,7 +658,8 @@ async def existing_refs(db, est_id: str, company_id: str, photo_key: str,
 
 async def propose_zones_for_photo(db, run: dict, est_id: str, company_id: str,
                                   photo_key: str, created_by: Optional[str],
-                                  natural_size, place_new: bool = True) -> dict:
+                                  natural_size, place_new: bool = True,
+                                  scope: str = "all") -> dict:
     """Place (or decline to place) one face's zone set on one photo.
     Returns the report row — the refusal is as much of an answer as the
     zones are.
@@ -629,9 +684,10 @@ async def propose_zones_for_photo(db, run: dict, est_id: str, company_id: str,
         {"estimate_id": est_id, "company_id": company_id,
          "photo_key": photo_key})]
     base_mark = _base_mark_line(marks_here)
+    eave_mark = _eave_mark_line(marks_here)
     built = build_zone_marks(run, face, wall, photo_key, nat_w, nat_h,
                              est_id, company_id, created_by,
-                             base_mark=base_mark)
+                             base_mark=base_mark, eave_mark=eave_mark)
     by_ref = {}
     for m in marks_here:
         ai = m.get("ai") or {}
@@ -646,9 +702,18 @@ async def propose_zones_for_photo(db, run: dict, est_id: str, company_id: str,
                 made.append(m)
             continue
         # A PLAIN RE-PULL STILL OVERWRITES NOTHING (SEND-144). A zone only
-        # moves when the ANCHOR changed: a wall_base line exists, or one was
+        # moves when the ANCHOR changed: a tapped line exists, or one was
         # just removed and this is the REBASE that follows.
-        if base_mark is None and place_new:
+        if base_mark is None and eave_mark is None and place_new:
+            continue
+        # SEND-149 — AN EAVE TAP MAY ONLY MOVE THE BODY. "Do not reshape the
+        # gable or the dormer in this send. They stay where they are."
+        part = str((cur.get("ai") or {}).get("ref_id") or "").split(":")[-1]
+        if scope == "body" and part != "body":
+            notes.append(
+                f"'{cur.get('label')}' was not moved: an eave line only sets "
+                "the BODY top in this send — the gable and the dormer stay "
+                "exactly where they are")
             continue
         # SEND-147 — A FRESH PROVISIONAL ZONE IS RE-PLACED WHOLE on the new
         # anchor: body, gable and dormer together, since the gable and the
@@ -663,8 +728,11 @@ async def propose_zones_for_photo(db, run: dict, est_id: str, company_id: str,
         # and stay — and a touched GABLE or DORMER is not touched at all.
         why = _zone_is_human_touched(cur)
         if why:
-            follow = await _bottom_follows_the_line(
-                db, est_id, company_id, cur, base_mark, why)
+            follow = await _edge_follows_the_line(
+                db, est_id, company_id, cur, base_mark, why, "bottom")
+            top = await _edge_follows_the_line(
+                db, est_id, company_id, cur, eave_mark, why, "top")
+            follow = " ".join(x for x in (follow, top) if x) or None
             if follow:
                 notes.append(follow)
                 moved.append(dict(m, id=cur["id"]))
@@ -683,16 +751,35 @@ async def propose_zones_for_photo(db, run: dict, est_id: str, company_id: str,
         moved.append(dict(m, id=cur["id"]))
     if made:
         await db.photo_takeoff_marks.insert_many([dict(m) for m in made])
+    #  SEND-149 — IF THE NEW TOP CROSSES A DORMER, REPORT IT. No auto-fix.
+    if eave_mark and moved:
+        top_y = float(eave_mark["y"])
+        for cur in by_ref.values():
+            if str((cur.get("ai") or {}).get("ref_id") or "").endswith(":dormer"):
+                low = max(float(p["y"]) for p in (cur.get("points") or [{"y": 0}]))
+                if low > top_y + 1:
+                    notes.append(
+                        f"THE NEW BODY TOP CROSSES '{cur.get('label')}': the "
+                        f"eave line you tapped sits at y={round(top_y, 1)} px "
+                        f"and that dormer reaches down to y={round(low, 1)} px, "
+                        "so the two overlap on this photo. NOTHING was "
+                        "auto-fixed and the dormer was not moved — this is "
+                        "reported for you to settle")
     if moved:
         notes.append(
             f"{len(moved)} provisional zone(s) MOVED to "
-            + (f"the wall_base line you tapped on this photo "
-               f"(y={round(float(base_mark['y']), 1)} px)" if base_mark else
+            + ((("the line(s) you tapped on this photo ("
+                 + ", ".join(
+                     ([f"wall_base y={round(float(base_mark['y']), 1)} px"]
+                      if base_mark else [])
+                     + ([f"eave y={round(float(eave_mark['y']), 1)} px"]
+                        if eave_mark else []))
+                 + ")")) if (base_mark or eave_mark) else
                "the read's own answer, because the wall_base line on this "
                "photo is gone")
-            + ". A body you had moved by hand keeps its own sides and top — "
-              "only its BOTTOM followed the line; a gable or dormer you "
-              "touched was not moved at all")
+            + ". A body you had moved by hand keeps its own sides — only the "
+              "edge you anchored followed the line, never the other one; a "
+              "gable or dormer you touched was not moved at all")
     for row in (_measurements(run).get("_per_elevation_breakdown") or []):
         if str(row.get("label") or "").lower() == face:
             stone = float(row.get("stone_sqft") or 0)
@@ -709,56 +796,83 @@ async def propose_zones_for_photo(db, run: dict, est_id: str, company_id: str,
             "wall_base": ({"y": base_mark["y"], "status": base_mark["status"],
                            "mark_id": base_mark["mark_id"]}
                           if base_mark else None),
+            "eave": ({"y": eave_mark["y"], "status": eave_mark["status"],
+                      "mark_id": eave_mark["mark_id"]}
+                     if eave_mark else None),
             "already_there": len(by_ref) or None, "notes": notes or None}
 
 
-async def _bottom_follows_the_line(db, est_id: str, company_id: str,
-                                   cur: dict, base_mark: Optional[dict],
-                                   why: str) -> Optional[str]:
-    """SEND-148 — THE START LINE OUTRANKS THE OLD DRAG, FOR THE BODY ONLY.
+async def _edge_follows_the_line(db, est_id: str, company_id: str,
+                                 cur: dict, line: Optional[dict], why: str,
+                                 edge: str) -> Optional[str]:
+    """SEND-148 — THE START LINE OUTRANKS THE OLD DRAG, FOR THE BODY ONLY, and
+    SEND-149 — THE EAVE LINE DOES THE SAME AT THE TOP.
 
-    The zone is NOT cleared and NOT re-placed: the two LOWEST vertices of the
-    box he already moved are pulled to the tapped line's y and NOTHING ELSE
-    is touched. His sides and his top are his own evidence and they stay, so
-    the box's height becomes HIS and no longer the read's — the basis says so.
-    A GABLE or a DORMER he touched is left alone entirely, as ruled.
+    The zone is NOT cleared and NOT re-placed: the two LOWEST vertices (for a
+    `wall_base`) or the two HIGHEST (for an `eave`) of the box he already
+    moved are pulled to the tapped line's y, and NOTHING ELSE is touched —
+    not one x, and never the other edge. His sides are his own evidence and
+    they stay. A GABLE or a DORMER he touched is left alone entirely.
 
     A CONFIRMED zone whose geometry changes goes back to PROVISIONAL: a
     confirmation cannot outlive the figure it was given for."""
-    if base_mark is None:
+    if line is None:
         return None
     if str((cur.get("ai") or {}).get("ref_id") or "").split(":")[-1] != "body":
         return None
     pts = [dict(p) for p in (cur.get("points") or [])]
     if len(pts) < 3:
         return None
-    y = float(base_mark["y"])
-    low = sorted(range(len(pts)), key=lambda i: float(pts[i]["y"]))[-2:]
-    was = round(max(float(p["y"]) for p in pts), 1)
+    y = float(line["y"])
+    order = sorted(range(len(pts)), key=lambda i: float(pts[i]["y"]))
+    if edge == "bottom":
+        pick, was = order[-2:], round(max(float(p["y"]) for p in pts), 1)
+        other = round(min(float(p["y"]) for p in pts), 1)
+        if y <= other + 1:
+            return (f"the wall_base line you tapped (y={round(y, 1)} px) sits "
+                    f"at or ABOVE this box's top (y={other} px), so it cannot "
+                    "be a bottom: nothing moved and nothing was guessed")
+    else:
+        pick, was = order[:2], round(min(float(p["y"]) for p in pts), 1)
+        other = round(max(float(p["y"]) for p in pts), 1)
+        if y >= other - 1:
+            return (f"the eave line you tapped (y={round(y, 1)} px) sits at or "
+                    f"BELOW this box's bottom (y={other} px), so it cannot be "
+                    "a top: nothing moved and nothing was guessed")
     if abs(was - y) < 0.5:
         return None
-    for i in low:
+    for i in pick:
         pts[i]["y"] = y
+    word = "wall_base" if edge == "bottom" else "eave"
     note = (
-        f"SEND-148 — YOUR START LINE OUTRANKS THE OLD DRAG: the BOTTOM EDGE of "
-        f"'{cur.get('label')}' moved from y={was} px to the wall_base line you "
-        f"tapped (y={round(y, 1)} px). {why.capitalize()}, so nothing else was "
-        "touched — your sides and your top are yours and they stayed, which "
-        "means this box's HEIGHT is now YOURS and not the read's. The zone was "
-        "not cleared and not re-placed, and the ft² still comes from the shape "
-        "you confirm.")
-    upd = {"points": pts, "updated_at": _now(), "rebased_at": _now(),
-           "basis": (cur.get("basis") or "") + " " + note,
-           "ai": dict(cur.get("ai") or {},
-                      anchor="wall_base_mark",
-                      anchor_wall_base_mark=base_mark.get("mark_id"),
-                      anchor_wall_base_y=round(y, 3),
-                      bottom_followed_your_line=True)}
+        f"SEND-{'148' if edge == 'bottom' else '149'} — YOUR "
+        f"{'START' if edge == 'bottom' else 'EAVE'} LINE OUTRANKS THE OLD "
+        f"DRAG: the {edge.upper()} EDGE of '{cur.get('label')}' moved from "
+        f"y={was} px to the {word} line you tapped (y={round(y, 1)} px). "
+        f"{why.capitalize()}, so nothing else was touched — your sides and "
+        f"your {'top' if edge == 'bottom' else 'bottom'} are yours and they "
+        "stayed, which means this box's HEIGHT is now YOURS and not the "
+        "read's. The zone was not cleared and not re-placed, and the ft² "
+        "still comes from the shape you confirm.")
+    stamp = _now()
+    ai = dict(cur.get("ai") or {})
+    if edge == "bottom":
+        ai.update(anchor="wall_base_mark",
+                  anchor_wall_base_mark=line.get("mark_id"),
+                  anchor_wall_base_y=round(y, 3),
+                  bottom_followed_your_line=True)
+    else:
+        ai.update(top_anchor="eave_mark",
+                  anchor_eave_mark=line.get("mark_id"),
+                  anchor_eave_y=round(y, 3),
+                  top_followed_your_line=True)
+    upd = {"points": pts, "updated_at": stamp, "rebased_at": stamp,
+           "basis": (cur.get("basis") or "") + " " + note, "ai": ai}
     if cur.get("status") == "confirmed":
         upd.update({"status": "provisional", "confirmed_at": None,
                     "confirmed_by": None, "confirmed_stage": None,
                     "confirmed_basis": None, "confirmed_after_ai_read": None,
-                    "refused_reason": ("the bottom moved to the wall_base line "
+                    "refused_reason": (f"the {edge} moved to the {word} line "
                                        "you tapped — re-confirm the new "
                                        "figure")})
         note += (" It was CONFIRMED, so it went back to PROVISIONAL: a "
@@ -767,6 +881,14 @@ async def _bottom_follows_the_line(db, est_id: str, company_id: str,
         {"id": cur["id"], "estimate_id": est_id, "company_id": company_id},
         {"$set": upd})
     return note
+
+
+async def _bottom_follows_the_line(db, est_id: str, company_id: str,
+                                   cur: dict, base_mark: Optional[dict],
+                                   why: str) -> Optional[str]:
+    """SEND-148's door, kept by name: the BOTTOM edge follows a wall_base."""
+    return await _edge_follows_the_line(db, est_id, company_id, cur,
+                                        base_mark, why, "bottom")
 
 
 def _zone_is_human_touched(cur: dict) -> Optional[str]:
@@ -801,7 +923,8 @@ def _zone_is_human_touched(cur: dict) -> Optional[str]:
 
 async def rebase_zones_for_photo(db, est_id: str, company_id: str,
                                  photo_key: str,
-                                 created_by: Optional[str] = None) -> dict:
+                                 created_by: Optional[str] = None,
+                                 scope: str = "all") -> dict:
     """SEND-147 — THE TAP MOVES THE BOX. When a wall_base line is tapped,
     moved or removed on a photo, the AI zones already on that photo are
     re-placed against the new anchor. NOTHING NEW IS PLACED: a start line is
@@ -832,10 +955,11 @@ async def rebase_zones_for_photo(db, est_id: str, company_id: str,
 
         row = await propose_zones_for_photo(db, run, est_id, company_id,
                                             photo_key, created_by,
-                                            natural_size, place_new=False)
+                                            natural_size, place_new=False,
+                                            scope=scope)
         return {"photo_key": photo_key, "moved": row.get("moved"),
-                "wall_base": row.get("wall_base"), "notes": row.get("notes"),
-                "refusal": row.get("refusal")}
+                "wall_base": row.get("wall_base"), "eave": row.get("eave"),
+                "notes": row.get("notes"), "refusal": row.get("refusal")}
     except Exception as exc:                     # a tap must never 500
         logger.warning("zone rebase failed on %s: %s", photo_key, exc)
         out["notes"] = [f"the zones on this photo were not re-based: {exc}"]

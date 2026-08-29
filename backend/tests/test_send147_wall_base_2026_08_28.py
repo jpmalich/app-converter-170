@@ -105,9 +105,11 @@ def test_the_record_stores_a_and_b_and_its_own_y_in_this_photos_pixels():
 
 
 def test_it_is_a_phase_one_two_tap_mark_and_the_starter_run_stays_unbuilt():
-    assert ANCHOR_KINDS == {"wall_base"}
+    # SEND-149 PIN UPDATE, BY NAME: the EAVE joined it, on the same pattern.
+    assert ANCHOR_KINDS == {"wall_base", "eave"}
     assert "wall_base" in PHASE1_KINDS
     assert KIND_POINTS["wall_base"] == 2         # exactly two ends, ever
+    assert KIND_POINTS["eave"] == 2
     #  the phase-2 STARTER RUN is a different thing and it is still refused
     assert "starter" in PHASE2_KINDS
     assert "wall_base" not in PHASE2_KINDS
@@ -120,7 +122,7 @@ def test_it_carries_no_lf_and_no_price_anywhere():
     assert "never priced" in WALL_BASE_BASIS
     assert "ANCHOR" in WALL_BASE_BASIS
     #  no lineal figure is COMPUTED for it — checked on the CODE, not the words
-    wb = ROUTES.split("def _wall_base_record")[1].split("WALL_BASE_BASIS")[0]
+    wb = ROUTES.split("def _wall_base_record")[1].split("EAVE_BASIS")[0]
     code = wb.split('"""')[2] if wb.count('"""') >= 2 else wb
     for banned in ("lineal", "price", "cost", "hypot", "span_px"):
         assert banned not in code.lower(), banned
@@ -205,12 +207,18 @@ def test_a_mark_of_another_kind_is_never_read_as_a_start_line():
 # WHAT IT MUST NOT DO
 # ---------------------------------------------------------------------------
 def test_there_is_no_ai_starter_finder_and_no_new_trim_marks_in_this_send():
+    # SEND-149 PIN UPDATE, BY NAME: `eave_mark` is now a TAPPED line Howard
+    # authorised, so it leaves this list; an AI EAVE FINDER is still banned.
     for banned in ("find_starter", "detect_starter", "starter_finder",
-                   "corner_tick", "eave_mark", "soffit_mark", "fascia_mark"):
+                   "find_eave", "detect_eave", "eave_finder",
+                   "corner_tick", "soffit_mark", "fascia_mark"):
         assert banned not in MODULE and banned not in ROUTES, banned
     #  the anchor is a READ of a stored mark, not a search of the photo
-    fn = MODULE.split("def _base_mark_line")[1].split("\ndef ")[0]
-    assert 'm.get("kind") != "wall_base"' in fn
+    # SEND-149 PIN UPDATE, BY NAME: the selector is now shared with the EAVE
+    # line and reads the kind it was asked for — still a READ of a stored
+    # mark, never a search of the photo.
+    fn = MODULE.split("def _two_tap_line_mark")[1].split("\ndef ")[0]
+    assert 'm.get("kind") != kind' in fn
     assert "cv2" not in fn and "numpy" not in fn
 
 
@@ -218,7 +226,7 @@ def test_it_is_never_copied_from_another_photo_or_another_face():
     #  the placer is handed ONE photo's marks and the query names that photo
     assert '"photo_key": photo_key' in MODULE
     assert "never copied to another photo or another face" in ROUTES
-    fn = MODULE.split("def _base_mark_line")[1].split("\ndef ")[0]
+    fn = MODULE.split("def _two_tap_line_mark")[1].split("\ndef ")[0]
     assert "photo_key" not in fn      # it cannot even see another photo's key
 
 
@@ -274,13 +282,16 @@ def test_the_tap_itself_moves_the_box_and_never_places_a_new_zone():
     assert "if place_new:\n                made.append(m)" in fn
     #  create, move and delete of a wall_base all re-base that photo
     assert ROUTES.count("await rebase_zones_for_photo(") == 3
-    assert 'if body.kind == "wall_base" else None' in ROUTES
-    assert 'if cur.get("kind") == "wall_base" else None' in ROUTES
-    assert 'if (cur or {}).get("kind") == "wall_base" else None' in ROUTES
+    #  SEND-149 PIN UPDATE, BY NAME: both anchor kinds trigger the re-base.
+    assert 'if body.kind in ANCHOR_KINDS else None' in ROUTES
+    assert 'if cur.get("kind") in ANCHOR_KINDS else None' in ROUTES
+    assert 'if (cur or {}).get("kind") in ANCHOR_KINDS else None' in ROUTES
     #  a plain re-pull with no start line still overwrites nothing
-    assert "if base_mark is None and place_new:" in MODULE
+    assert "if base_mark is None and eave_mark is None and place_new:" in MODULE
     #  and the editor says out loud what moved
-    assert "provisional zone(s) dropped to it" in EDITOR
+    #  SEND-149 PIN UPDATE, BY NAME: the toast now names WHICH line was set.
+    assert 'line set — ${data.rebase.moved} provisional zone(s) moved to it' \
+        in EDITOR
 
 
 def test_a_refused_face_gets_nothing_even_with_a_start_line_tapped():

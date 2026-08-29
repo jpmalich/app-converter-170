@@ -13,7 +13,7 @@ import ScalePanel from "@/components/estimate/phototakeoff/ScalePanel";
 import CandidateEdges from "@/components/estimate/phototakeoff/CandidateEdges";
 import TrimPanel from "@/components/estimate/phototakeoff/TrimPanel";
 import {
-  CATEGORIES, DORMER, GABLE, OPENING, SIDING, TAP_ORDER, WALL_BASE, kindLabel, markColor,
+  CATEGORIES, DORMER, EAVE, GABLE, OPENING, SIDING, TAP_ORDER, WALL_BASE, kindLabel, markColor,
 } from "@/components/estimate/phototakeoff/marks";
 // SEND-139 — the gable and dormer tools MOVE HERE from the annotator.
 // The annotator's own math module is REUSED, not re-implemented: same
@@ -169,9 +169,9 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
       const { data } = await api.post(`/estimates/${est.id}/photo-takeoff/marks`, body);
       await load();
       // SEND-147 — the tap moved the box, so say so and say what it did not move.
-      if (data?.rebase?.moved) toast.success(`Start line set — ${data.rebase.moved} provisional zone(s) dropped to it`);
+      if (data?.rebase?.moved) toast.success(`${tool === "eave" ? "Eave" : "Start"} line set — ${data.rebase.moved} provisional zone(s) moved to it`);
       (data?.rebase?.notes || []).forEach((n) => toast.info(n));
-      if (!sc && tool !== "wall_base") toast.warning("No scale on this photo yet — the mark saves, but it carries no quantity until you set the scale");
+      if (!sc && tool !== "wall_base" && tool !== "eave") toast.warning("No scale on this photo yet — the mark saves, but it carries no quantity until you set the scale");
     } catch (e) { toast.error(e?.response?.data?.detail || "The mark was refused"); }
   };
   const patchMark = async (id, body) => {
@@ -287,10 +287,10 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
     const pts = draft?.points || [];
     // SEND-147 — THE WALL BASE IS A TWO-TAP LINE: left end, then right end.
     // Same gesture as the scale, and it is stored as an ANCHOR — no LF.
-    if (tool === "wall_base") {
+    if (tool === "wall_base" || tool === "eave") {
       if (!pts.length) { setDraft({ points: [p], cx: p.x, cy: p.y }); return; }
       const d = Math.hypot((p.x - pts[0].x) * imgNat.w, (p.y - pts[0].y) * imgNat.h);
-      if (d < 8) { toast.error("Second tap too close — tap the OTHER end of the start line"); return; }
+      if (d < 8) { toast.error(`Second tap too close — tap the OTHER end of the ${tool === "eave" ? "eave" : "start"} line`); return; }
       setDraft(null);
       addMark([pts[0], p], "line");
       return;
@@ -436,7 +436,7 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
   const qtyCell = (m, a) => {
     // SEND-147 — A WALL BASE IS AN ANCHOR, NOT A QUANTITY: no ft², and above
     // all NO LF. It prints what it is.
-    if (m.kind === "wall_base") return "anchor · no LF";
+    if (m.kind === "wall_base" || m.kind === "eave") return "anchor · no LF";
     if (m.shape === "point") return "count only — no drawn extent";
     if (a == null) return "no scale";
     if (m.status === "refused" || figureRefused(m.id) || !(a > 0)) return "—";
@@ -458,6 +458,9 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
     // SEND-147 — the two-tap START LINE. An anchor, not a trim run: it
     // carries no LF and it is never priced.
     { key: "wall_base", label: "Wall base", color: WALL_BASE },
+    // SEND-149 — the two-tap EAVE / frieze line. Sets the body TOP. Also an
+    // anchor: no LF, never priced, and it is not a soffit or a fascia.
+    { key: "eave", label: "Eave", color: EAVE },
     { key: "scale", label: "Scale", color: "#10B981" },
   ];
 
@@ -474,7 +477,7 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
 
         <div className="px-3 py-1.5 bg-[#FEF3C7] border-b border-[#F59E0B] text-[10px] font-bold text-[var(--warning-text)] flex items-center gap-1.5" data-testid="photo-takeoff-known-limit">
           <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-          Phase 1: areas, openings, gables, dormers and the WALL BASE start line (an anchor — no LF, never priced). Trim runs (corners, J-channel, starter, soffit, fascia) are NOT built. Openings are reported — nothing is deducted from siding.
+          Phase 1: areas, openings, gables, dormers and the two anchor lines — WALL BASE (body bottom) and EAVE (body top), both anchors: no LF, never priced. Trim runs (corners, J-channel, starter, soffit, fascia) are NOT built. Openings are reported — nothing is deducted from siding.
         </div>
 
         {/* ONE EDITOR, TWO STAGES. The stage is decided by THIS photo's own
@@ -591,7 +594,7 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                       <div key={`lbl2-${m.id}`} className="absolute text-white font-bold pointer-events-none"
                         style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%`, background: markColor(m), fontSize: "9px", padding: "1px 3px", lineHeight: 1 }}
                         data-testid={`photo-takeoff-line-label-${m.id}`}>
-                        {kindLabel(m)}·y {Math.round(m.wall_base?.y ?? 0)}px{m.status !== "confirmed" ? `·${m.status === "refused" ? "refused" : "provisional"}` : ""}
+                        {kindLabel(m)}·y {Math.round(m.wall_base?.y ?? m.eave?.y ?? 0)}px{m.status !== "confirmed" ? `·${m.status === "refused" ? "refused" : "provisional"}` : ""}
                       </div>
                     );
                   })}
@@ -634,7 +637,8 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                     : TAP_ORDER[tool]
                       ? TAP_ORDER[tool][(draft?.points?.length || 0)] || TAP_ORDER[tool][0]
                       : "tap each corner · tap the first again to close"}
-                {tool === "wall_base" ? " — an ANCHOR for the AI body bottom, never an LF run" : ""}
+                {tool === "wall_base" ? " — an ANCHOR for the AI body bottom, never an LF run"
+                  : tool === "eave" ? " — an ANCHOR for the AI body top, never an LF run (not a soffit, not a fascia)" : ""}
               </span>
             </div>
           </div>
