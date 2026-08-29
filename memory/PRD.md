@@ -1,5 +1,50 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-29 SEND-148 — A START LINE HE JUST MARKED OUTRANKS THE OLD DRAG (stamped `2026-08-29 12:58 UTC · 85ee83a · CLEAN · 3160 passed, 9 skipped, 7 warnings in 437.86s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
+Full record: `memory/send148_report.md` · 7 pins in
+`tests/test_send148_start_line_outranks_the_drag_2026_08_29.py` · 1 SEND-147
+pin re-titled BY NAME. **The zone is not cleared. The gable is not touched.
+RIGHT refused. EST-886440 untouched.**
+1. **THE RULING**: *"FRONT's tweaked body should FOLLOW the wall_base tap. A
+   start line he just marked outranks the old drag. Do not clear the zone. Do
+   not touch the gable."*
+2. **THE BODY FOLLOWS, AND ONLY ITS BOTTOM EDGE**: the two LOWEST vertices go
+   to the tapped line's y; **not one x changes** and the top edge does not
+   move. One `update_one` on the same mark id — no delete, no insert, no new
+   id — and his own basis survives with the new sentence APPENDED.
+3. **THE CONSEQUENCE IS SAID OUT LOUD**: *"your sides and your top are yours
+   and they stayed, which means this box's HEIGHT is now YOURS and not the
+   read's… the ft² still comes from the shape you confirm."* `ai.anchor` →
+   `wall_base_mark`, `bottom_followed_your_line: true`, and the read's own
+   claim is not rewritten.
+4. **A TOUCHED GABLE OR DORMER IS NOT TOUCHED AT ALL**, refused by name and
+   told what would change it. **NO START LINE → NOTHING FOLLOWS**: deleting a
+   line never drags a hand-moved body back, and a bottom already on the line is
+   left alone rather than written for the sake of writing. **A CONFIRMED body
+   goes back to PROVISIONAL** with the reason stored — a confirmation cannot
+   outlive the figure it was given for.
+5. **RUN FOR REAL ON FRONT**: x span `373.9 → 2003.0` unchanged, top `739.3`
+   unchanged, bottom **1386.9 → 1448.0**, `anchor: wall_base_mark`, gable
+   untouched, report `moved: 1` with the gable's refusal beside it.
+6. **SOMETHING I GOT WRONG, AND IT WAS HIS**: at 05:00:12 UTC Howard tapped a
+   start line on LEFT and his body followed it to **y = 322.706** (SEND-147
+   working). Testing this send I cleared "my own test lines" with a
+   `delete_many` on `kind: wall_base` and **deleted his LEFT line with mine**.
+   **His y survived** — the LEFT body still sits on 322.7 px and
+   `ai.anchor_wall_base_y = 322.706` records his tap; I did not move it back
+   and did not re-base that photo. **His line's two ends did not survive** and
+   **I refused to reconstruct them** — invented endpoints are exactly the
+   figure this app does not fabricate; one tap puts the line back. **His FRONT
+   box was restored to 1386.9 px** with my test sentence stripped and
+   `anchor: first_floor_openings` back; his FRONT and BACK gables were never
+   touched. There is **no wall_base on any photo of EST-176308 right now**.
+   **Rule for me from here: a test mark's id is recorded when it is created and
+   only THAT id is deleted — never a `delete_many` by kind on his data.**
+7. **STILL OPEN, FOR HOWARD**: re-tap LEFT (his y is already carried) · corner
+   tick / eave / soffit / fascia mark types · the object-storage latency flake
+   from SEND-145 item 9.
+
+
 ## 2026-08-29 SEND-147 — THE WALL-BASE MARK: A HUMAN TWO-TAP START LINE WITH ITS OWN STORED y (stamped `2026-08-29 03:57 UTC · 6815649 · CLEAN · 3153 passed, 9 skipped, 7 warnings in 454.97s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
 Full record: `memory/send147_report.md` · 16 pins in
 `tests/test_send147_wall_base_2026_08_28.py` + 1 new SEND-143 pin, and **3 pins
