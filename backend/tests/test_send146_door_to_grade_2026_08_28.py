@@ -197,16 +197,19 @@ def test_the_placement_is_still_never_called_a_measurement():
 
 
 def test_the_starter_candidate_line_still_stores_no_geometry_to_anchor_to():
-    """Howard asked for the bottom to sit on the starter_candidate line already
-    printed on the photo. That line is drawn by `CandidateEdges.jsx` FROM the
-    body zone's own bottom corners — it has no stored y of its own, so reading
-    it back would be circular. This pin fails the day it becomes real, which is
-    the day the anchor can be rewired."""
+    """SEND-147 PIN UPDATE, BY NAME. This pin was written to FAIL the day the
+    start line became real — Howard picked option 2 and it is real now, so the
+    pin holds the part that is still true: the RENDERED candidate edge still
+    carries no geometry, and the placer still does not read it back (that
+    would be circular). What the placer reads is the TAPPED `wall_base` MARK,
+    which has its own stored y."""
     jsx = pathlib.Path(
         "/app/frontend/src/components/estimate/phototakeoff/CandidateEdges.jsx"
     ).read_text()
     assert 'word: "starter candidate", a: bl, b: br' in jsx
     assert "no length, no LF, no key written" in jsx
-    #  and nothing in the placer reads a candidate edge back
+    #  the placer never reads the DRAWN candidate edge back
     assert "starter_candidate" not in MODULE
-    assert "candidate" in MODULE and "circular" in MODULE
+    assert "circular" in MODULE
+    #  it reads the TAPPED mark instead — anchor rung 1, real as of SEND-147
+    assert "wall_base" in MODULE and "BEATS the door sill" in MODULE

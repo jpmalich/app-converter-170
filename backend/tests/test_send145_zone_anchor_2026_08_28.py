@@ -195,12 +195,14 @@ def test_a_box_with_no_size_is_never_used_for_scale():
 
 
 def test_the_other_two_anchors_are_doors_that_answer_honestly_today():
-    assert _base_mark_line([]) is None
+    """SEND-147 PIN UPDATE, BY NAME: rung 1 is REAL now (the tapped wall_base
+    mark), so this pin holds rung 2 — the WALL REF bar, still prose only — and
+    the ruled ORDER, which is still written where the code can be read."""
+    assert _base_mark_line([]) is None                  # nothing tapped yet
     assert _wall_ref_bar(_run(), 0) is None
     assert "would be" in MODULE and "circular" in MODULE
     assert "writes no pixel geometry for it" in MODULE
-    # the ruled order is written down where the code can be read
-    for line in ("the starter-candidate / wall-base MARK",
+    for line in ("THE WALL-BASE MARK on that photo",
                  "the WALL REF bar", "FIRST-FLOOR OPENING BOXES",
                  "else the photo bottom"):
         assert line in MODULE, line

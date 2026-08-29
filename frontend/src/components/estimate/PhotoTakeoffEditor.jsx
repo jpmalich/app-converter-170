@@ -13,7 +13,7 @@ import ScalePanel from "@/components/estimate/phototakeoff/ScalePanel";
 import CandidateEdges from "@/components/estimate/phototakeoff/CandidateEdges";
 import TrimPanel from "@/components/estimate/phototakeoff/TrimPanel";
 import {
-  CATEGORIES, DORMER, GABLE, OPENING, SIDING, TAP_ORDER, kindLabel, markColor,
+  CATEGORIES, DORMER, GABLE, OPENING, SIDING, TAP_ORDER, WALL_BASE, kindLabel, markColor,
 } from "@/components/estimate/phototakeoff/marks";
 // SEND-139 — the gable and dormer tools MOVE HERE from the annotator.
 // The annotator's own math module is REUSED, not re-implemented: same
@@ -166,9 +166,12 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
         category: tool === "non_siding_zone" ? category : null,
         ...extra,
       };
-      await api.post(`/estimates/${est.id}/photo-takeoff/marks`, body);
+      const { data } = await api.post(`/estimates/${est.id}/photo-takeoff/marks`, body);
       await load();
-      if (!sc) toast.warning("No scale on this photo yet — the mark saves, but it carries no quantity until you set the scale");
+      // SEND-147 — the tap moved the box, so say so and say what it did not move.
+      if (data?.rebase?.moved) toast.success(`Start line set — ${data.rebase.moved} provisional zone(s) dropped to it`);
+      (data?.rebase?.notes || []).forEach((n) => toast.info(n));
+      if (!sc && tool !== "wall_base") toast.warning("No scale on this photo yet — the mark saves, but it carries no quantity until you set the scale");
     } catch (e) { toast.error(e?.response?.data?.detail || "The mark was refused"); }
   };
   const patchMark = async (id, body) => {
@@ -178,13 +181,16 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
         toast.warning("Geometry changed — that mark went back to PROVISIONAL; confirm the new figure");
       }
       await load();
+      if (data?.rebase?.moved) toast.success(`Start line moved — ${data.rebase.moved} provisional zone(s) followed it`);
+      (data?.rebase?.notes || []).forEach((n) => toast.info(n));
     } catch (e) { toast.error(e?.response?.data?.detail || "The change was refused"); }
   };
   const delMark = async (id) => {
     try {
-      await api.delete(`/estimates/${est.id}/photo-takeoff/marks/${id}`);
+      const { data } = await api.delete(`/estimates/${est.id}/photo-takeoff/marks/${id}`);
       if (selectedId === id) setSelectedId(null);
       await load();
+      if (data?.rebase?.moved) toast.info(`Start line deleted — ${data.rebase.moved} provisional zone(s) went back to the read's own answer`);
     } catch { toast.error("Could not delete that mark"); }
   };
   const commitScale = async (p1, p2, inches) => {
@@ -240,6 +246,8 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
       const { data } = await api.post(`/estimates/${est.id}/photo-takeoff/propose-zones`, null, { params: { photo_key: photoKey } });
       await load();
       if (data.refusal) toast.warning(data.refusal);
+      else if (data.moved) toast.success(
+        `${data.face?.toUpperCase()} — ${data.moved} zone(s) MOVED to the wall_base line you tapped${data.proposed ? `, ${data.proposed} newly placed` : ""}`);
       else toast.success(data.proposed
         ? `${data.face?.toUpperCase()} — ${data.proposed} starting zone(s) placed, all PROVISIONAL: move them onto the wall you see, then confirm`
         : `${data.face?.toUpperCase()} — this read's starting zones are already here; nothing was overwritten`);
@@ -277,6 +285,16 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
     }
     if (dragVertex) return;
     const pts = draft?.points || [];
+    // SEND-147 — THE WALL BASE IS A TWO-TAP LINE: left end, then right end.
+    // Same gesture as the scale, and it is stored as an ANCHOR — no LF.
+    if (tool === "wall_base") {
+      if (!pts.length) { setDraft({ points: [p], cx: p.x, cy: p.y }); return; }
+      const d = Math.hypot((p.x - pts[0].x) * imgNat.w, (p.y - pts[0].y) * imgNat.h);
+      if (d < 8) { toast.error("Second tap too close — tap the OTHER end of the start line"); return; }
+      setDraft(null);
+      addMark([pts[0], p], "line");
+      return;
+    }
     if (tool === "opening") {
       // an opening is a TWO-TAP BOX — tap one corner, tap the opposite one
       if (!pts.length) { setDraft({ points: [p], cx: p.x, cy: p.y }); return; }
@@ -416,6 +434,9 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
 
   // The ONE place that decides what a mark's quantity cell may say.
   const qtyCell = (m, a) => {
+    // SEND-147 — A WALL BASE IS AN ANCHOR, NOT A QUANTITY: no ft², and above
+    // all NO LF. It prints what it is.
+    if (m.kind === "wall_base") return "anchor · no LF";
     if (m.shape === "point") return "count only — no drawn extent";
     if (a == null) return "no scale";
     if (m.status === "refused" || figureRefused(m.id) || !(a > 0)) return "—";
@@ -434,6 +455,9 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
     { key: "opening", label: "Opening", color: OPENING },
     { key: "gable", label: "Gable", color: GABLE },
     { key: "dormer", label: "Dormer", color: DORMER },
+    // SEND-147 — the two-tap START LINE. An anchor, not a trim run: it
+    // carries no LF and it is never priced.
+    { key: "wall_base", label: "Wall base", color: WALL_BASE },
     { key: "scale", label: "Scale", color: "#10B981" },
   ];
 
@@ -450,7 +474,7 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
 
         <div className="px-3 py-1.5 bg-[#FEF3C7] border-b border-[#F59E0B] text-[10px] font-bold text-[var(--warning-text)] flex items-center gap-1.5" data-testid="photo-takeoff-known-limit">
           <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-          Phase 1: areas, openings, gables and dormers. Trim runs (corners, J-channel, starter, soffit, fascia) are NOT built. Openings are reported — nothing is deducted from siding.
+          Phase 1: areas, openings, gables, dormers and the WALL BASE start line (an anchor — no LF, never priced). Trim runs (corners, J-channel, starter, soffit, fascia) are NOT built. Openings are reported — nothing is deducted from siding.
         </div>
 
         {/* ONE EDITOR, TWO STAGES. The stage is decided by THIS photo's own
@@ -506,6 +530,16 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                       const pts = nMark(m);
                       const col = markColor(m);
                       const sel = m.id === selectedId;
+                      if (pts.length === 2) {
+                        // SEND-147 — the WALL BASE start line. Two ends, one
+                        // stored y, no LF anywhere near it.
+                        return (
+                          <line key={m.id} x1={pts[0].x * 100} y1={pts[0].y * 100}
+                            x2={pts[1].x * 100} y2={pts[1].y * 100}
+                            stroke={col} strokeWidth={sel ? "1" : "0.7"}
+                            strokeDasharray={m.status === "confirmed" ? "0" : m.status === "refused" ? "0.8 0.8" : "2 1.2"} />
+                        );
+                      }
                       if (pts.length < 3) {
                         return pts.length === 1 ? (
                           <circle key={m.id} cx={pts[0].x * 100} cy={pts[0].y * 100} r={sel ? 1.4 : 1}
@@ -551,6 +585,16 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                       data-testid={`photo-takeoff-vertex-${m.id}-${i}`}
                     />
                   )))}
+                  {marks.filter((m) => (m.points || []).length === 2).map((m) => {
+                    const p = nMark(m)[0];
+                    return (
+                      <div key={`lbl2-${m.id}`} className="absolute text-white font-bold pointer-events-none"
+                        style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%`, background: markColor(m), fontSize: "9px", padding: "1px 3px", lineHeight: 1 }}
+                        data-testid={`photo-takeoff-line-label-${m.id}`}>
+                        {kindLabel(m)}·y {Math.round(m.wall_base?.y ?? 0)}px{m.status !== "confirmed" ? `·${m.status === "refused" ? "refused" : "provisional"}` : ""}
+                      </div>
+                    );
+                  })}
                   {marks.filter((m) => (m.points || []).length >= 3).map((m) => {
                     const p = nMark(m)[0];
                     const a = sqftOf(m);
@@ -590,6 +634,7 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                     : TAP_ORDER[tool]
                       ? TAP_ORDER[tool][(draft?.points?.length || 0)] || TAP_ORDER[tool][0]
                       : "tap each corner · tap the first again to close"}
+                {tool === "wall_base" ? " — an ANCHOR for the AI body bottom, never an LF run" : ""}
               </span>
             </div>
           </div>

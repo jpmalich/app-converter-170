@@ -189,12 +189,33 @@ def test_the_unsupported_lanes_name_the_missing_mark_and_print_no_zero():
             assert bad not in by[k]["refusal"].lower()
 
 
+def test_the_starter_lane_still_prints_no_lf_when_a_wall_base_is_tapped():
+    """SEND-147 — the starter RUN is not built, but the row must not LIE: with
+    a WALL BASE line on the photo it stops saying none is marked and says what
+    the line actually is. Still an em dash, still no LF."""
+    from routes.photo_takeoff import _trim_rows as tr
+    wb = {"kind": "wall_base", "status": "provisional",
+          "points": [{"x": 10, "y": 300}, {"x": 900, "y": 302}]}
+    row = {r["key"]: r for r in tr([wb], [], IPP)[0]}["starter"]
+    assert row["lf"] is None
+    assert "a WALL BASE line IS marked on this photo" in row["refusal"]
+    assert "ANCHOR ONLY" in row["refusal"] and "NO LF" in row["refusal"]
+    assert "no wall BASE is marked" not in row["refusal"]
+    for bad in ("typical", "average", "assume", "mirror", "0 LF"):
+        assert bad not in row["refusal"].lower()
+
+
 def test_no_new_mark_type_was_smuggled_in():
     """The trims with no mark are refused BECAUSE the mark does not exist —
-    a starter/corner/soffit MARK is still rejected at the door."""
+    a starter/corner/soffit MARK is still rejected at the door.
+
+    SEND-147 PIN UPDATE, BY NAME: Howard authorised ONE new kind, `wall_base`,
+    and it is an ANCHOR, not a trim run — the starter/corner/soffit/fascia
+    RUNS are still rejected at the door and the starter LANE still prints an
+    em dash."""
     from routes.photo_takeoff import PHASE1_KINDS, PHASE2_KINDS
     assert PHASE1_KINDS == {"siding_zone", "non_siding_zone", "opening",
-                            "gable", "dormer"}
+                            "gable", "dormer", "wall_base"}
     for k in ("outside_corner", "inside_corner", "starter", "soffit",
               "fascia", "j_channel"):
         assert k in PHASE2_KINDS and k not in PHASE1_KINDS

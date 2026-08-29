@@ -41,7 +41,8 @@ from pydantic import BaseModel, Field
 
 from db import db
 from deps import get_current_user
-from photo_zone_proposals import propose_zones_for_photo
+from photo_zone_proposals import (propose_zones_for_photo,
+                                  rebase_zones_for_photo)
 from untouchable import is_untouchable
 
 router = APIRouter(tags=["photo-takeoff"])
@@ -59,10 +60,18 @@ OPENING_KINDS = {"opening"}
 # where either does not. No 0.70 comes across (the annotator's drawn
 # gable never used it — see the send-139 report).
 GABLE_KINDS = {"gable", "dormer"}
-PHASE1_KINDS = AREA_KINDS | OPENING_KINDS | GABLE_KINDS
-# Exact point counts — a gable is a triangle and a dormer face is a quad.
-# A wrong count is refused by name, never padded or truncated.
-KIND_POINTS = {"gable": 3, "dormer": 4}
+# SEND-147 (Howard ruled 2026-08-28) — THE WALL-BASE MARK. HUMAN TWO-TAP,
+# NO DETECTOR. The same gesture as the two-tap scale, on THAT photo only:
+# tap 1 = the LEFT end of the starter / wall base, tap 2 = the RIGHT end.
+# It stores `a`, `b` and its `y` in this photo's own natural pixels and it
+# writes NO LF and no price — THIS IS AN ANCHOR, NOT A TRIM TAKEOFF. The
+# phase-2 `starter` RUN stays unbuilt and still refuses by name.
+ANCHOR_KINDS = {"wall_base"}
+PHASE1_KINDS = AREA_KINDS | OPENING_KINDS | GABLE_KINDS | ANCHOR_KINDS
+# Exact point counts — a gable is a triangle, a dormer face is a quad and a
+# wall base is the two ends of one line. A wrong count is refused by name,
+# never padded or truncated.
+KIND_POINTS = {"gable": 3, "dormer": 4, "wall_base": 2}
 # The annotator's own pitch presets, carried over verbatim.
 GABLE_PITCH_PRESETS = (4, 5, 6, 7, 8, 9, 10, 12)
 GABLE_PITCH_MIN = 3
@@ -88,6 +97,28 @@ BODY_SECTION_EXCLUDE = ("accessor", "soffit", "fascia", "trim", "labor",
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _wall_base_record(pts: List[dict]) -> dict:
+    """SEND-147 — THE START LINE GETS ITS OWN STORED y. `a` and `b` are the
+    two taps exactly as they landed, in this photo's natural pixels; `y` is
+    the mean of their two y's, and it is the ONE number the body bottom
+    reads. Nothing here is a length: no LF is written and no price exists."""
+    a, b = ({"x": float(pts[0]["x"]), "y": float(pts[0]["y"])},
+            {"x": float(pts[1]["x"]), "y": float(pts[1]["y"])})
+    if b["x"] < a["x"]:                       # a is the LEFT end, always
+        a, b = b, a
+    return {"a": a, "b": b, "y": round((a["y"] + b["y"]) / 2.0, 3),
+            "units": "natural pixels of this photo",
+            "tilt_px": round(abs(b["y"] - a["y"]), 3)}
+
+
+WALL_BASE_BASIS = (
+    "WALL BASE — the start line you tapped on THIS photo. It stores its two "
+    "ends and its own y in this photo's natural pixels, and it is an ANCHOR, "
+    "NOT A TRIM RUN: no LF is written for it, it is never priced, and it is "
+    "never copied to another photo or another face. While it exists, the AI "
+    "body zone's BOTTOM on this photo comes from this line.")
 
 
 class Point(BaseModel):
@@ -786,10 +817,24 @@ def _trim_rows(marks: List[dict], masks: List[dict],
                                    "triangle on this photo — GABLE ZONE, "
                                    "never a wall run")})
         else:
+            # SEND-147 — THE STARTER LANE MUST NOT LIE. Once a WALL BASE line
+            # is tapped on this photo it is FALSE to say none is marked: the
+            # line exists, it is an ANCHOR for the AI body bottom, and this
+            # send writes NO LF for it. The starter RUN stays unbuilt and the
+            # row still prints the em dash.
+            refusal = TRIM_REFUSALS[key]
+            if key == "starter" and any(m.get("kind") == "wall_base"
+                                        for m in marks):
+                refusal = (
+                    "a WALL BASE line IS marked on this photo, and it is an "
+                    "ANCHOR ONLY — SEND-147 built it to set the AI body "
+                    "bottom and writes NO LF for it. The starter RUN is not "
+                    "built in this send, so this row stays an em dash rather "
+                    "than a number nobody ruled on")
             rows.append({"key": key, "label": TRIM_LABELS[key],
                          "zone": TRIM_ZONES.get(key, "body"),
                          "lf": None, "rows": None,
-                         "refusal": TRIM_REFUSALS[key], "basis": None})
+                         "refusal": refusal, "basis": None})
     return rows, j, r
 
 
@@ -1134,6 +1179,8 @@ async def add_mark(est_id: str, body: MarkIn,
                     f"photo's natural pixels — "
                     + ("LEFT EAVE, PEAK, RIGHT EAVE"
                        if body.kind == "gable" else
+                       "the LEFT end of the wall base, then the RIGHT end"
+                       if body.kind == "wall_base" else
                        "bottom-left, bottom-right, top-right, top-left")
                     + "; nothing is padded or truncated to fit"))
     if len(pts) < need:
@@ -1156,7 +1203,11 @@ async def add_mark(est_id: str, body: MarkIn,
     doc = {
         "id": str(uuid4()), "estimate_id": est_id,
         "company_id": user["company_id"], "photo_key": body.photo_key,
-        "kind": body.kind, "shape": body.shape, "points": pts,
+        "kind": body.kind,
+        "shape": "line" if body.kind == "wall_base" else body.shape,
+        "points": pts,
+        "wall_base": (_wall_base_record(pts) if body.kind == "wall_base"
+                      else None),
         "category": body.category, "label": body.label,
         "style": body.style, "width_in": body.width_in,
         "height_in": body.height_in,
@@ -1168,7 +1219,8 @@ async def add_mark(est_id: str, body: MarkIn,
         "confirmed_under_product": None,
         "source": body.source, "status": "provisional",
         "origin": origin, "stage": stage,
-        "basis": _origin_basis(origin, stage),
+        "basis": (WALL_BASE_BASIS if body.kind == "wall_base"
+                  else _origin_basis(origin, stage)),
         "ai": None,
         "confirmed_at": None, "confirmed_by": None, "confirmed_stage": None,
         "confirmed_basis": None, "confirmed_after_ai_read": None,
@@ -1177,7 +1229,13 @@ async def add_mark(est_id: str, body: MarkIn,
         "updated_at": _now(),
     }
     await db.photo_takeoff_marks.insert_one(dict(doc))
-    return {"ok": True, "mark": _mark_public(doc)}
+    # SEND-147 — THE TAP MOVES THE BOX. A start line is an ANCHOR, so the AI
+    # zones already on this photo are re-placed against it at once. Nothing
+    # new is placed, and a zone touched by hand stays where it was put.
+    rebase = (await rebase_zones_for_photo(
+        db, est_id, user["company_id"], body.photo_key, user.get("email"))
+        if body.kind == "wall_base" else None)
+    return {"ok": True, "mark": _mark_public(doc), "rebase": rebase}
 
 
 @router.patch("/estimates/{est_id}/photo-takeoff/marks/{mark_id}")
@@ -1196,6 +1254,12 @@ async def patch_mark(est_id: str, mark_id: str, body: MarkPatch,
         {"estimate_id": est_id, "company_id": user["company_id"],
          "photo_key": cur["photo_key"]})
     upd: Dict[str, Any] = {"updated_at": _now()}
+    # SEND-147 — A HAND ON A MARK IS RECORDED. A body zone Howard has moved,
+    # confirmed or refused is HUMAN-TOUCHED and a re-pull leaves it alone;
+    # only a FRESH PROVISIONAL body may move to a new wall-base y.
+    upd["human_touched"] = True
+    upd["human_touched_at"] = _now()
+    upd["human_touched_by"] = user.get("email")
     if body.points is not None:
         pts = [p.model_dump() for p in body.points]
         need = KIND_POINTS.get(cur.get("kind"),
@@ -1205,6 +1269,8 @@ async def patch_mark(est_id: str, mark_id: str, body: MarkPatch,
             raise HTTPException(status_code=400,
                                 detail=f"a mark needs {need} point(s)")
         upd["points"] = pts
+        if cur.get("kind") == "wall_base":
+            upd["wall_base"] = _wall_base_record(pts)
         if cur.get("status") == "confirmed":
             upd.update({"status": "provisional", "confirmed_at": None,
                         "confirmed_by": None, "confirmed_stage": None,
@@ -1297,19 +1363,29 @@ async def patch_mark(est_id: str, mark_id: str, body: MarkPatch,
                         "confirmed_after_ai_read": None})
     await db.photo_takeoff_marks.update_one(key, {"$set": upd})
     doc = await db.photo_takeoff_marks.find_one(key)
-    return {"ok": True, "mark": _mark_public(doc)}
+    rebase = (await rebase_zones_for_photo(
+        db, est_id, user["company_id"], cur["photo_key"], user.get("email"))
+        if cur.get("kind") == "wall_base" else None)
+    return {"ok": True, "mark": _mark_public(doc), "rebase": rebase}
 
 
 @router.delete("/estimates/{est_id}/photo-takeoff/marks/{mark_id}")
 async def delete_mark(est_id: str, mark_id: str,
                       user: dict = Depends(get_current_user)):
     await _est_or_404(est_id, user)
-    res = await db.photo_takeoff_marks.delete_one(
-        {"id": mark_id, "estimate_id": est_id,
-         "company_id": user["company_id"]})
+    key = {"id": mark_id, "estimate_id": est_id,
+           "company_id": user["company_id"]}
+    cur = await db.photo_takeoff_marks.find_one(key)
+    res = await db.photo_takeoff_marks.delete_one(key)
     if not res.deleted_count:
         raise HTTPException(status_code=404, detail="mark not found")
-    return {"ok": True, "deleted": mark_id}
+    # SEND-147 — with the start line gone the anchor is gone: a FRESH
+    # provisional zone goes back to the read's own answer, and a zone
+    # touched by hand stays exactly where the hand left it.
+    rebase = (await rebase_zones_for_photo(
+        db, est_id, user["company_id"], cur["photo_key"], user.get("email"))
+        if (cur or {}).get("kind") == "wall_base" else None)
+    return {"ok": True, "deleted": mark_id, "rebase": rebase}
 
 
 @router.post("/estimates/{est_id}/photo-takeoff/import-annotations")
@@ -1686,6 +1762,12 @@ async def propose_zones(est_id: str, photo_key: str,
         "zones_proposed": [m["ai"]["ref_id"].split(":")[-1]
                            for m in row.get("marks") or []] or [],
         "proposed": row.get("proposed", 0),
+        # SEND-147 — a MOVE is reported as loudly as a placement: a fresh
+        # provisional zone may follow a wall_base line the contractor
+        # tapped, and a zone he has touched by hand never does.
+        "moved": row.get("moved"),
+        "wall_base": row.get("wall_base"),
+        "already_there": row.get("already_there"),
         "marks": [_mark_public(m) for m in row.get("marks") or []],
         "refusal": row.get("refusal"),
         "notes": row.get("notes"),

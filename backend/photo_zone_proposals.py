@@ -46,12 +46,15 @@ HEAD_ON_FACES = ("front", "back", "left", "right")
 # wall rule — a yard or a patio put the box on the grass and parked the
 # dormer on the first floor. THE SHAPE WAS FINE; THE ANCHOR WAS WRONG.
 #
-# The anchor order, as ruled. Only (3) exists today; (1) and (2) are kept as
-# the doors they will be the day those marks exist, and (4) SAYS SO OUT LOUD:
-#   1. the starter-candidate / wall-base MARK on that photo   — no such mark
-#      type exists yet (SEND-143 left it a named refusal), and the SEND-144
-#      candidate edge is derived FROM the body zone, so anchoring to it would
-#      be circular.
+# The anchor order, as ruled. (1) BECAME REAL IN SEND-147; (2) is still the
+# door it will be the day the read writes pixels for that bar, and (4) SAYS SO
+# OUT LOUD:
+#   1. THE WALL-BASE MARK on that photo — REAL AS OF SEND-147: a HUMAN
+#      TWO-TAP (`kind: wall_base`) that stores its two ends and its own y.
+#      It BEATS the door sill and it BEATS the window-indeterminate answer.
+#      (The SEND-144 candidate EDGE is still derived FROM the body zone, so
+#      reading THAT back would be circular — this rung reads the tapped
+#      mark, never the drawn candidate.)
 #   2. the WALL REF bar                                       — the read
 #      names it in prose only; it writes no pixel geometry for it.
 #   3. THE READ'S OWN FIRST-FLOOR OPENING BOXES — real pixels on the wall,
@@ -223,13 +226,32 @@ def _dormer_for(run: dict, face: str) -> tuple[Optional[dict], Optional[str]]:
     return d, unanchored
 
 
-def _base_mark_line(marks_on_photo) -> None:
-    """ANCHOR 1 — the starter-candidate / wall-base MARK. There is no such
-    mark type yet (SEND-143 left starter a named refusal), and the SEND-144
-    candidate edge is derived FROM the body zone, so reading it back would be
-    circular. The door stays here for the mark-type send; today it answers
-    honestly with nothing."""
-    return None
+def _base_mark_line(marks_on_photo) -> Optional[dict]:
+    """ANCHOR 1 — THE WALL-BASE MARK (SEND-147, Howard's option 2). Real at
+    last: a human two-tap on THAT photo, stored as kind `wall_base` with its
+    own `a`, `b` and `y`. When one exists it BEATS the door sill and it BEATS
+    the window-indeterminate answer.
+
+    A REFUSED line is not an anchor. A CONFIRMED one wins over a provisional
+    one, and among equals the LATEST tap governs — the contractor's most
+    recent word about his own start line. Nothing is copied from another
+    photo: the caller only ever passes THIS photo's marks."""
+    best = None
+    for m in (marks_on_photo or []):
+        if m.get("kind") != "wall_base" or m.get("status") == "refused":
+            continue
+        wb = m.get("wall_base") or {}
+        try:
+            y = float(wb["y"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        rank = (1 if m.get("status") == "confirmed" else 0,
+                str(m.get("updated_at") or m.get("created_at") or ""))
+        if best is None or rank > best[0]:
+            best = (rank, {"y": y, "a": wb.get("a"), "b": wb.get("b"),
+                           "tilt_px": wb.get("tilt_px"),
+                           "status": m.get("status"), "mark_id": m.get("id")})
+    return best[1] if best else None
 
 
 def _wall_ref_bar(run: dict, photo_idx: int) -> None:
@@ -330,11 +352,28 @@ def first_floor_anchor(run: dict, photo_idx: int, nat_w: float, nat_h: float,
     }
 
 
+def _scale_note(anchor: dict) -> str:
+    return (
+        "SCALE from '" + str(anchor["scale_from"]) + "' ("
+        f"{anchor['scale_from_ft']} ft wide, {anchor['scale_from_px']} px "
+        "on this photo), the biggest first-floor box the read measured; "
+        "no scale is averaged and no course height is guessed"
+        + (f". Dropped above the wall band (not first floor): "
+           f"{', '.join(anchor['dropped_above_the_wall_band'])}"
+           if anchor["dropped_above_the_wall_band"] else ""))
+
+
 def build_zone_marks(run: dict, face: str, wall: dict, photo_key: str,
                      nat_w: float, nat_h: float, est_id: str,
-                     company_id: str, created_by: Optional[str]) -> List[dict]:
+                     company_id: str, created_by: Optional[str],
+                     base_mark: Optional[dict] = None) -> List[dict]:
     """The starting shapes for ONE face, in that photo's own pixels. Every
-    figure comes from `run`; the placement is stated as a placement."""
+    figure comes from `run`; the placement is stated as a placement.
+
+    SEND-147 — a WALL_BASE mark on this photo (`base_mark`) sets the body
+    bottom and BEATS both opening answers. The plane SCALE still comes from
+    the read's own biggest first-floor box: a start line says WHERE the wall
+    ends, never HOW BIG a foot is."""
     width_ft = float(wall.get("width_ft") or 0)
     if not width_ft > 0 or not (nat_w > 0 and nat_h > 0):
         return []
@@ -353,21 +392,48 @@ def build_zone_marks(run: dict, face: str, wall: dict, photo_key: str,
         idx = names.index(photo_key)
     anchor = (first_floor_anchor(run, idx, nat_w, nat_h, height_ft)
               if idx is not None else None)
-    if anchor:
+    base_y = None
+    if base_mark:
+        try:
+            base_y = float(base_mark["y"])
+        except (KeyError, TypeError, ValueError):
+            base_y = None
+    if base_y is not None:
+        # SEND-147 — THE START LINE GOVERNS. Its y is the body bottom; the
+        # scale still comes from the read's own biggest first-floor box where
+        # one exists, and the 80%-of-frame fallback ONLY where it does not.
+        if anchor:
+            ppf = anchor["ppf"]
+            scale_note = _scale_note(anchor)
+        else:
+            above_ft = max(rise_ft, dormer_h if has_dormer else 0.0)
+            ppf = min(BODY_WIDTH_FRAC * nat_w / width_ft,
+                      MAX_SET_HEIGHT_FRAC * nat_h / (height_ft + above_ft))
+            scale_note = (
+                "no first-floor opening on this photo carries a typed size, so "
+                "the WIDTH of the box is 80% of the frame and INDETERMINATE — "
+                "only the BOTTOM is evidence here")
+        body_w = width_ft * ppf
+        body_h = height_ft * ppf
+        y1 = base_y
+        y0 = y1 - body_h
+        x0 = ((anchor["center_px"] if anchor else nat_w / 2.0) - body_w / 2.0)
+        anchor_note = (
+            "bottom from wall_base mark on this photo — the start line YOU "
+            f"tapped ({base_mark.get('status')}, y={round(base_y, 1)} px"
+            + (f", tilt {base_mark.get('tilt_px')} px across its two ends"
+               if base_mark.get("tilt_px") else "")
+            + "), which beats every opening: an opening sill is not the wall "
+              "base. "
+            + scale_note)
+    elif anchor:
         ppf = anchor["ppf"]
         body_w = width_ft * ppf
         body_h = height_ft * ppf
         y1 = anchor["bottom_px"]
         y0 = y1 - body_h
         x0 = anchor["center_px"] - body_w / 2.0
-        scale_note = (
-            "SCALE from '" + str(anchor["scale_from"]) + "' ("
-            f"{anchor['scale_from_ft']} ft wide, {anchor['scale_from_px']} px "
-            "on this photo), the biggest first-floor box the read measured; "
-            "no scale is averaged and no course height is guessed"
-            + (f". Dropped above the wall band (not first floor): "
-               f"{', '.join(anchor['dropped_above_the_wall_band'])}"
-               if anchor["dropped_above_the_wall_band"] else ""))
+        scale_note = _scale_note(anchor)
         if anchor["bottom_kind"] == "door_to_grade":
             anchor_note = (
                 f"BOTTOM anchored to the sill line of '{anchor['bottom_from']}'"
@@ -464,10 +530,14 @@ def build_zone_marks(run: dict, face: str, wall: dict, photo_key: str,
                     f"AI {face} body", body_basis,
                     {"height_readings_disagree": bool(disagreement),
                      "anchor": (
-                         ("first_floor_door_to_grade"
-                          if anchor["bottom_kind"] == "door_to_grade"
-                          else "window_sill_indeterminate") if anchor
+                         "wall_base_mark" if base_y is not None
+                         else ("first_floor_door_to_grade"
+                               if anchor["bottom_kind"] == "door_to_grade"
+                               else "window_sill_indeterminate") if anchor
                          else "photo_bottom_indeterminate"),
+                     "anchor_wall_base_mark": (base_mark or {}).get("mark_id"),
+                     "anchor_wall_base_y": (round(base_y, 3)
+                                            if base_y is not None else None),
                      "anchor_bottom_from": (anchor or {}).get("bottom_from"),
                      "anchor_bottom_sill_of": (anchor or {}).get("bottom_sill_of"),
                      "anchor_scale_from": (anchor or {}).get("scale_from"),
@@ -534,10 +604,14 @@ async def existing_refs(db, est_id: str, company_id: str, photo_key: str,
 
 async def propose_zones_for_photo(db, run: dict, est_id: str, company_id: str,
                                   photo_key: str, created_by: Optional[str],
-                                  natural_size) -> dict:
+                                  natural_size, place_new: bool = True) -> dict:
     """Place (or decline to place) one face's zone set on one photo.
     Returns the report row — the refusal is as much of an answer as the
-    zones are."""
+    zones are.
+
+    SEND-147 — with `place_new=False` this is a REBASE and nothing new is
+    placed: a wall-base tap may only MOVE zones that are already here and
+    still fresh. Tapping a start line never conjures a zone set."""
     who = face_for_photo(run, photo_key)
     if who.get("refusal"):
         return {"photo_key": photo_key, "face": who.get("face"),
@@ -551,14 +625,59 @@ async def propose_zones_for_photo(db, run: dict, est_id: str, company_id: str,
                     "placed in its own pixels — nothing is placed on a "
                     "guessed size")}
     nat_w, nat_h = dims
-    have = await existing_refs(db, est_id, company_id, photo_key,
-                               run.get("run_id"))
-    made = [m for m in build_zone_marks(run, face, wall, photo_key, nat_w,
-                                        nat_h, est_id, company_id, created_by)
-            if (m["ai"]["run_id"], m["ai"]["ref_id"]) not in have]
+    marks_here = [m async for m in db.photo_takeoff_marks.find(
+        {"estimate_id": est_id, "company_id": company_id,
+         "photo_key": photo_key})]
+    base_mark = _base_mark_line(marks_here)
+    built = build_zone_marks(run, face, wall, photo_key, nat_w, nat_h,
+                             est_id, company_id, created_by,
+                             base_mark=base_mark)
+    by_ref = {}
+    for m in marks_here:
+        ai = m.get("ai") or {}
+        if ai.get("run_id") and ai.get("ref_id"):
+            by_ref[(ai["run_id"], ai["ref_id"])] = m
+    made, moved, notes = [], [], []
+    for m in built:
+        key = (m["ai"]["run_id"], m["ai"]["ref_id"])
+        cur = by_ref.get(key)
+        if cur is None:
+            if place_new:
+                made.append(m)
+            continue
+        # A PLAIN RE-PULL STILL OVERWRITES NOTHING (SEND-144). A zone only
+        # moves when the ANCHOR changed: a wall_base line exists, or one was
+        # just removed and this is the REBASE that follows.
+        if base_mark is None and place_new:
+            continue
+        # SEND-147 — A FRESH PROVISIONAL ZONE MAY MOVE TO THE NEW y. A zone
+        # Howard has dragged, confirmed or refused is HUMAN-TOUCHED and it
+        # STAYS — his hand outranks the anchor. The gable and the dormer
+        # stack on the body top, so they travel with a body that moves.
+        why = _zone_is_human_touched(cur)
+        if why:
+            notes.append(
+                f"'{cur.get('label')}' was not moved: {why} — your hand "
+                "outranks the anchor. Delete it if you want it "
+                "re-placed on the line you tapped")
+            continue
+        stamp = _now()
+        await db.photo_takeoff_marks.update_one(
+            {"id": cur["id"], "estimate_id": est_id, "company_id": company_id},
+            {"$set": {"points": m["points"], "basis": m["basis"],
+                      "ai": m["ai"], "updated_at": stamp,
+                      "rebased_at": stamp}})
+        moved.append(dict(m, id=cur["id"]))
     if made:
         await db.photo_takeoff_marks.insert_many([dict(m) for m in made])
-    notes = []
+    if moved:
+        notes.append(
+            f"{len(moved)} provisional zone(s) MOVED to "
+            + (f"the wall_base line you tapped on this photo "
+               f"(y={round(float(base_mark['y']), 1)} px)" if base_mark else
+               "the read's own answer, because the wall_base line on this "
+               "photo is gone")
+            + ". Nothing you had touched by hand was moved")
     for row in (_measurements(run).get("_per_elevation_breakdown") or []):
         if str(row.get("label") or "").lower() == face:
             stone = float(row.get("stone_sqft") or 0)
@@ -571,7 +690,84 @@ async def propose_zones_for_photo(db, run: dict, est_id: str, company_id: str,
                     "guessed spot")
     return {"photo_key": photo_key, "face": face, "proposed": len(made),
             "marks": made, "refusal": None,
-            "already_there": len(have) or None, "notes": notes or None}
+            "moved": len(moved) or None,
+            "wall_base": ({"y": base_mark["y"], "status": base_mark["status"],
+                           "mark_id": base_mark["mark_id"]}
+                          if base_mark else None),
+            "already_there": len(by_ref) or None, "notes": notes or None}
+
+
+def _zone_is_human_touched(cur: dict) -> Optional[str]:
+    """SEND-147 — A HUMAN-TOUCHED ZONE STAYS PUT, and this says WHY in words.
+
+    Three ways a zone counts as touched:
+      · the PATCH route stamped `human_touched` (every hand edit does);
+      · it is CONFIRMED or REFUSED — a ruling is a hand;
+      · it was UPDATED long after the machine last wrote it. Howard tweaked
+        FRONT's edges BEFORE the stamp existed, so the clock is the only
+        witness those drags left — and it is honoured. `rebased_at` records
+        the machine's own last write so a re-base never mistakes itself for
+        a hand.
+    """
+    if cur.get("human_touched"):
+        return "you have already moved it by hand"
+    if cur.get("status") != "provisional":
+        return f"it is {cur.get('status')}, not provisional"
+    machine = cur.get("rebased_at") or cur.get("created_at")
+    seen = cur.get("updated_at")
+    if machine and seen:
+        try:
+            gap = abs((datetime.fromisoformat(str(seen))
+                       - datetime.fromisoformat(str(machine))).total_seconds())
+        except (TypeError, ValueError):
+            return None
+        if gap > 5:
+            return ("it was edited after it was placed (before this app "
+                    "stamped hand edits), and an edit is a hand")
+    return None
+
+
+async def rebase_zones_for_photo(db, est_id: str, company_id: str,
+                                 photo_key: str,
+                                 created_by: Optional[str] = None) -> dict:
+    """SEND-147 — THE TAP MOVES THE BOX. When a wall_base line is tapped,
+    moved or removed on a photo, the AI zones already on that photo are
+    re-placed against the new anchor. NOTHING NEW IS PLACED: a start line is
+    an anchor, not a proposal, so a photo with no zones stays empty. A zone
+    Howard has dragged, confirmed or refused STAYS PUT and says why."""
+    out = {"photo_key": photo_key, "moved": None, "notes": None}
+    try:
+        run = None
+        async for r in db.ai_measure_runs.find(
+                {"estimate_id": est_id, "status": "done"},
+                sort=[("created_at", -1)]).limit(25):
+            if photo_key in _run_photo_names(r):
+                run = r
+                break
+        if not run:
+            return out
+        from routes.photo_takeoff import _photo_natural_size
+
+        async def natural_size(key):
+            dims = _photo_natural_size(key)
+            if dims:
+                return dims
+            from config import UPLOAD_DIR
+            from upload_store import rehydrate_to_disk
+            if await rehydrate_to_disk(key, UPLOAD_DIR):
+                return _photo_natural_size(key)
+            return None
+
+        row = await propose_zones_for_photo(db, run, est_id, company_id,
+                                            photo_key, created_by,
+                                            natural_size, place_new=False)
+        return {"photo_key": photo_key, "moved": row.get("moved"),
+                "wall_base": row.get("wall_base"), "notes": row.get("notes"),
+                "refusal": row.get("refusal")}
+    except Exception as exc:                     # a tap must never 500
+        logger.warning("zone rebase failed on %s: %s", photo_key, exc)
+        out["notes"] = [f"the zones on this photo were not re-based: {exc}"]
+        return out
 
 
 async def maybe_propose_zones(run_id: str) -> dict:
